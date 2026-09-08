@@ -133,6 +133,22 @@ export default function StormDetail() {
                sub={`${c.observed_category ?? "unclassified"} · ${i.label_agency}`} />
         </div>
 
+        {state.centre.validated === false && state.centre.caveat && (
+          <div
+            className="panel"
+            style={{ marginTop: 10, padding: "10px 13px",
+                     borderColor: "color-mix(in srgb, var(--warn) 42%, transparent)",
+                     background: "color-mix(in srgb, var(--warn) 6%, transparent)" }}
+          >
+            <div className="tele" style={{ color: "var(--warn)", marginBottom: 3 }}>
+              Centre fix: disclosed negative result
+            </div>
+            <div style={{ fontSize: 12, color: "var(--fg-1)", lineHeight: 1.65 }}>
+              {state.centre.caveat}
+            </div>
+          </div>
+        )}
+
         {/* RI */}
         <Section title="Rapid intensification, 24 hours" />
         <div className="panel ticked" style={{ padding: "16px 18px" }}>

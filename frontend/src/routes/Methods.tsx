@@ -384,6 +384,28 @@ export default function Methods() {
                     sub={`coverage ${fmt(am.analysis.conformal_vmax?.empirical_coverage, 3)}`} />
             </div>
 
+            {/* Said in words, because a reader comparing 74 against a first
+                guess of 70 has to notice the comparison to see the result. */}
+            <div
+              style={{ marginTop: 12, padding: "10px 12px",
+                       borderRadius: "var(--r-sm)",
+                       border: "1px solid color-mix(in srgb, var(--warn) 40%, transparent)",
+                       background: "color-mix(in srgb, var(--warn) 6%, transparent)",
+                       fontSize: 12, color: "var(--fg-1)", lineHeight: 1.65 }}
+            >
+              <strong style={{ fontWeight: 500, color: "var(--warn)" }}>
+                The centre-fix head is a negative result.
+              </strong>{" "}
+              Its median error on held-out seasons is{" "}
+              {fmt(am.analysis.centre_fix_km?.median, 1)} km against the{" "}
+              {fmt(am.analysis.centre_fix_km?.first_guess_error_km, 0)} km first
+              guess it was handed, so it does not currently improve on track
+              extrapolation. Heatmap supervision at a resolution-aware target
+              width was tried and did not close the gap. The head is still
+              served, and the interface marks the position and its ellipse as
+              unvalidated wherever they appear.
+            </div>
+
             {am.analysis.centre_fix_km?.note && (
               <div style={{ fontSize: 11.5, color: "var(--fg-2)", marginTop: 12,
                             lineHeight: 1.6 }}>

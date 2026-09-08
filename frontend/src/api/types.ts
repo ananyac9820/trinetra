@@ -132,6 +132,10 @@ export interface StormState {
     source: string;
     first_guess_lat?: number;
     first_guess_lon?: number;
+    /** False for the centre-fix head, which does not currently beat its own
+     *  first guess. Surfaces that render the position must show the caveat. */
+    validated?: boolean;
+    caveat?: string;
   };
   intensity: {
     vmax_kt: number | null;

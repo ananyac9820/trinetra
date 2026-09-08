@@ -272,6 +272,22 @@ class InferenceEngine:
             "lat": float(row["lat"]), "lon": float(row["lon"]),
             "sigma_km": None, "source": "best_track",
         }
+        # The centre-fix head is a disclosed negative result.
+        #
+        # It refines a first guess drawn from track extrapolation, and on the
+        # held-out seasons its median error is 74 km against a 70 km first
+        # guess: it does not currently improve on the extrapolation it was
+        # given. The position and its sigma are still served, because the
+        # architecture and the downstream uncertainty propagation are real and
+        # the number is what it is, but nothing may present that ellipse as a
+        # validated uncertainty. Every surface that renders it reads this flag.
+        centre["validated"] = False
+        centre["caveat"] = (
+            "Not validated. On held-out seasons this head's median centre error "
+            "is 74 km against the 70 km first guess it was given, so it does "
+            "not yet improve on track extrapolation. Treat the position as the "
+            "extrapolated first guess and the ellipse as indicative only."
+        )
         if centre.get("sigma_km") is None:
             abstentions.append({
                 "head": "centre_fix",

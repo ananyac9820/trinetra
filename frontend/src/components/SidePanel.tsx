@@ -10,6 +10,8 @@
  */
 
 import { Link } from "react-router-dom";
+
+import WhyPanel from "./WhyPanel";
 import { formatAge, formatUtc, num, REGIME_LABEL, REGIME_COLOR } from "../api/client";
 import { CATEGORY_PLAIN, REGIME_PLAIN } from "../api/plain";
 import type { StormState } from "../api/types";
@@ -144,6 +146,17 @@ export default function SidePanel({ state, loading }: Props) {
           ci={state.centre.sigma_km}
           ciUnit="km"
         />
+      {/* A disclosed negative result, stated where the number appears rather
+          than only on the methods page. The head does not beat the track
+          extrapolation it starts from, so the ellipse must not read as a
+          validated uncertainty. */}
+      {state.centre.validated === false && state.centre.caveat && (
+        <div style={{ fontSize: 10, color: "var(--warn)", lineHeight: 1.5,
+                      margin: "1px 0 4px 62px" }}>
+          Position not validated. {state.centre.caveat.split(". ")[1]}.
+        </div>
+      )}
+
         <Metric label="Cloud pattern"
                 title="The shape the storm's clouds make, which is what forecasters have read from satellite images since the 1970s."
                 value={c.dvorak_scene?.replace(/_/g, " ") ?? "--"}
@@ -314,6 +327,12 @@ export default function SidePanel({ state, loading }: Props) {
           ))}
         </div>
       )}
+
+      {/* Why. Placed after the disagreement row and before the familiarity
+          check, so the panel reads as: what it thinks, how sure it is, where
+          the methods differ, why it thinks that, and whether it has seen
+          anything like this. */}
+      <WhyPanel stormId={state.storm_id} at={state.valid_time} />
 
       {state.ood && (
         <div className="panel" style={{ padding: "8px 10px", marginTop: 8 }}>
