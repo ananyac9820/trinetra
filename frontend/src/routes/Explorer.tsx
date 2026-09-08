@@ -26,6 +26,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import MapCanvas from "../map/MapCanvas";
+import ChangeCard from "../components/ChangeCard";
+import HerePanel from "../components/HerePanel";
+import ScenarioControl from "../components/ScenarioControl";
+import StormOverview, { stormsInScope } from "../components/StormOverview";
+import ThreatCard from "../components/ThreatCard";
+import ThreatStrip from "../components/ThreatStrip";
 import ChannelAgeStrip from "../components/ChannelAgeStrip";
 import LayerPanel from "../components/LayerPanel";
 import MapLegend from "../components/MapLegend";
@@ -35,7 +41,8 @@ import StormPicker from "../components/StormPicker";
 import TimeScrubber from "../components/TimeScrubber";
 import { api } from "../api/client";
 import type {
-  DistrictRisk, Freshness, Probe as ProbeData, StormState, StormSummary, Track,
+  Changes, DistrictRisk, Freshness, Hazard, HazardTimeline, LocationImpact,
+  Probe as ProbeData, StormState, StormSummary, Track,
 } from "../api/types";
 import { useStore } from "../state/store";
 import { useViewport } from "../state/useViewport";
@@ -72,9 +79,33 @@ export default function Explorer() {
     setLeftOpen(!tight);
     setRightOpen(!tight);
   }, [tight]);
+
+  /* Impact Mode hands the left column to the impact stack.
+     The layer controls are an Analysis instrument, and holding both open
+     leaves the map a strip down the middle. Switching back to Analysis
+     restores them. Either way a deliberate toggle wins, as above. */
+  useEffect(() => {
+    if (touchedPanels.current) return;
+    setLeftOpen(store.view === "analysis" && !tight);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.view]);
   const [copied, setCopied] = useState(false);
   const [trackError, setTrackError] = useState<string | null>(null);
   const [cursor, setCursor] = useState<{ lat: number; lon: number } | null>(null);
+
+  /* ---- Impact Mode state.
+   *
+   * The hazard, its timeline and the change summary all key off the same storm
+   * and scrubber position the analysis panels use, so switching mode never
+   * re-fetches the storm or moves the map. It is a change of question, not a
+   * change of page. */
+  const [hazard, setHazard] = useState<Hazard | null>(null);
+  const [hazardTl, setHazardTl] = useState<HazardTimeline | null>(null);
+  const [changes, setChanges] = useState<Changes | null>(null);
+  const [impact, setImpact] = useState<LocationImpact | null>(null);
+  const [impactLoading, setImpactLoading] = useState(false);
+  const [compared, setCompared] = useState<string[]>([]);
+  const [others, setOthers] = useState<{ summary: StormSummary; track: Track }[]>([]);
   const hydrated = useRef(false);
 
   /* Hydrate from the URL exactly once, before anything else writes to it.
@@ -147,15 +178,21 @@ export default function Explorer() {
     const next = toUrl();
     if (next !== params.toString()) setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Every field `toUrl` serialises has to be listed here. It is a plain
+    // dependency array rather than a subscription, so a field that is written
+    // to the URL but missing from this list is a field whose change never
+    // reaches the address bar: the mode, the storm scope and the scenario
+    // width were all dropped from shared links until they were added.
   }, [store.mode, store.stormId, store.at, store.active, store.opacity, store.order,
       store.lon, store.lat, store.zoom, store.bearing, store.pitch, store.follow,
-      store.speed, store.probe]);
+      store.speed, store.probe, store.view, store.scope, store.scenarioKm]);
 
   const onProbe = useCallback(
     (lat: number, lon: number) => {
       set({ probe: { lat, lon }, panel: "probe" });
       setRightOpen(true);
       setProbing(true);
+      if (store.view === "impact") askHere(lat, lon);
       api.probe(lat, lon, store.stormId ?? undefined, store.at ?? undefined)
         .then(setProbe)
         .catch(() => setProbe(null))
@@ -209,6 +246,80 @@ export default function Explorer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.storm_id]);
 
+  /* ---- hazard for the current moment, and the change summary.
+     Both follow the scrubber. The timeline is per storm and so is fetched
+     once per storm rather than once per step. */
+  useEffect(() => {
+    if (!store.stormId || !store.at) return;
+    let alive = true;
+    const sid = store.stormId;
+    const at = store.at;
+    api.hazard(sid, at).then((h) => { if (alive) setHazard(h); })
+      .catch(() => { if (alive) setHazard(null); });
+    api.changes(sid, at, 6).then((c) => { if (alive) setChanges(c); })
+      .catch(() => { if (alive) setChanges(null); });
+    return () => { alive = false; };
+  }, [store.stormId, store.at]);
+
+  useEffect(() => {
+    if (!store.stormId) return;
+    let alive = true;
+    setHazardTl(null);
+    api.hazardTimeline(store.stormId)
+      .then((t) => { if (alive) setHazardTl(t); })
+      .catch(() => { if (alive) setHazardTl(null); });
+    return () => { alive = false; };
+  }, [store.stormId]);
+
+  /* ---- the overview storms.
+     Tracks are fetched only for the storms actually drawn, and the selected
+     storm is excluded because it already has its own detailed track. Fetching
+     110 tracks to render a list of six would be absurd. */
+  useEffect(() => {
+    if (store.scope === "one" && compared.length === 0) {
+      setOthers([]);
+      return;
+    }
+    const wanted = stormsInScope(storms, store.scope, store.stormId, compared)
+      .filter((s) => s.storm_id !== store.stormId)
+      // A hard cap: "All" over 110 storms is 110 requests and an unreadable
+      // map. The list still shows every storm; the map draws the first slice.
+      .slice(0, store.scope === "all" ? 24 : 8);
+    if (!wanted.length) {
+      setOthers([]);
+      return;
+    }
+    let alive = true;
+    Promise.all(wanted.map((sm) =>
+      api.track(sm.storm_id)
+        .then((t) => ({ summary: sm, track: t }))
+        .catch(() => null)))
+      .then((rows) => {
+        if (alive) {
+          setOthers(rows.filter(Boolean) as { summary: StormSummary; track: Track }[]);
+        }
+      });
+    return () => { alive = false; };
+  }, [storms, store.scope, store.stormId, compared]);
+
+  /* ---- the location answer, for Impact Mode's probe. */
+  const askHere = useCallback((lat: number, lon: number) => {
+    if (!store.stormId) return;
+    setImpactLoading(true);
+    api.impact(lat, lon, store.stormId, store.at ?? undefined)
+      .then(setImpact)
+      .catch(() => setImpact(null))
+      .finally(() => setImpactLoading(false));
+  }, [store.stormId, store.at]);
+
+  /* Keep the location answer truthful when the clock moves. An open panel
+     showing values from another time is worse than no panel. */
+  useEffect(() => {
+    if (!store.probe || !store.at || store.view !== "impact") return;
+    askHere(store.probe.lat, store.probe.lon);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.at, store.view]);
+
   const copyPermalink = async () => {
     const url = `${window.location.origin}/explorer?${toUrl()}`;
     try {
@@ -232,6 +343,13 @@ export default function Explorer() {
         risk={risk}
         onProbe={onProbe}
         onHover={(lat, lon) => setCursor({ lat, lon })}
+        others={others}
+        scenarioKm={store.scenarioKm}
+        onSelectStorm={(id) => {
+          set({ stormId: id, at: null, probe: null });
+          setProbe(null);
+          setImpact(null);
+        }}
       />
 
       {/* ------------------------------------------------- top command row */}
@@ -252,6 +370,37 @@ export default function Explorer() {
               setProbe(null);
             }}
           />
+        </div>
+
+        {/* The product's main division, and the first control after the
+            storm itself. Analysis answers what the storm is doing; Impact
+            answers what that means on the ground. */}
+        <div
+          className="glass"
+          style={{
+            pointerEvents: "auto", display: "flex", gap: 2, padding: 3,
+            borderRadius: "var(--r-pill)", flex: "none",
+          }}
+        >
+          {([["analysis", "Analysis"], ["impact", "Impact"]] as const)
+            .map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => set({ view: k, panel: k === "impact" ? "probe" : "layers" })}
+              className="pill"
+              title={k === "analysis"
+                ? "What the storm is doing: the observations, the estimate and the evidence."
+                : "What it means on the ground: the leading hazard, how it changes, and what it means at a place you click."}
+              style={{
+                fontSize: 11.5, padding: "4px 13px", border: "none",
+                background: store.view === k ? "var(--accent-glow)" : "transparent",
+                color: store.view === k ? "var(--accent)" : "var(--fg-2)",
+                fontWeight: store.view === k ? 500 : 400,
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         <div
@@ -341,7 +490,9 @@ export default function Explorer() {
         tabs={
           <div style={{ display: "flex", padding: 3, gap: 2 }}>
             {(["layers", "probe"] as const).map((p) => {
-              const label = p === "layers" ? "Selected system" : "Probe";
+              const label = p === "layers"
+                ? "Selected system"
+                : store.view === "impact" ? "What's here?" : "Probe";
               const on = store.panel === p ||
                 (p === "layers" && store.panel === "legend");
               return (
@@ -364,11 +515,28 @@ export default function Explorer() {
         }
       >
         {store.panel === "probe" ? (
-          <Probe
-            probe={probe}
-            loading={probing}
-            onClose={() => { set({ probe: null, panel: "layers" }); setProbe(null); }}
-          />
+          /* In Impact Mode a click means "what does this mean here"; in
+             Analysis Mode it means "what is every layer's value here". Same
+             click, same point, different question, so the mode picks the
+             panel rather than making the user find the right tab. */
+          store.view === "impact" ? (
+            <HerePanel
+              impact={impact}
+              loading={impactLoading}
+              onClose={() => {
+                set({ probe: null, panel: "layers" });
+                setImpact(null);
+                setProbe(null);
+              }}
+              onShowTechnical={() => set({ view: "analysis" })}
+            />
+          ) : (
+            <Probe
+              probe={probe}
+              loading={probing}
+              onClose={() => { set({ probe: null, panel: "layers" }); setProbe(null); }}
+            />
+          )
         ) : (
           <SidePanel state={state} loading={loading} />
         )}
@@ -386,7 +554,95 @@ export default function Explorer() {
       >
         <div className="glass" style={{ pointerEvents: "auto", padding: "10px 14px 12px" }}>
           <TimeScrubber track={track} />
+          {/* The dominant hazard laid out along the same axis. In Impact Mode
+              it is the point of the timeline, so it is always shown; in
+              Analysis Mode it is context and stays folded to one strip. */}
+          {track && track.points.length > 1 && (
+            <div style={{ marginTop: 9 }}>
+              <ThreatStrip
+                timeline={hazardTl}
+                t0={new Date(track.points[0].valid_time).getTime()}
+                t1={new Date(track.points[track.points.length - 1].valid_time).getTime()}
+                at={store.at}
+                onSeek={(iso) => set({ at: iso, playing: false })}
+                height={store.view === "impact" ? 18 : 13}
+              />
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* ------------------------------------------------ impact cards
+          Only in Impact Mode, and stacked so the leading hazard is highest
+          and nearest the eye. */}
+      {store.view === "impact" && (
+        <div
+          className="fade"
+          style={{
+            position: "absolute",
+            left: compact ? 14 : (leftOpen ? LEFT_W + 26 : 58),
+            top: "calc(var(--chrome-h) + 58px)",
+            bottom: 156,
+            zIndex: 18,
+            display: "flex", flexDirection: "column", gap: 10,
+            pointerEvents: "none",
+            overflowY: "auto", overflowX: "hidden",
+            transition: "left var(--t) var(--ease-out)",
+          }}
+        >
+          <div style={{ pointerEvents: "auto" }}>
+            <ThreatCard
+              hazard={hazard}
+              loading={!hazard && !!store.stormId}
+              shift={changes?.hazard_shift
+                ? { from: changes.hazard_shift.from.label,
+                    to: changes.hazard_shift.to.label }
+                : null}
+              compact={compact}
+            />
+          </div>
+          <div style={{ pointerEvents: "auto" }}>
+            <ChangeCard changes={changes} compact={compact} />
+          </div>
+          <div style={{ pointerEvents: "auto" }}>
+            <ScenarioControl
+              value={store.scenarioKm}
+              onChange={(km) => set({ scenarioKm: km })}
+              compact={compact}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------ storm overview
+          Shown whenever more than the selected storm is on the map, and
+          available as a scope switch at all times. */}
+      <div
+        style={{
+          position: "absolute",
+          right: compact ? 14 : (rightOpen ? RIGHT_W + 26 : 60),
+          top: "calc(var(--chrome-h) + 58px)",
+          zIndex: 18,
+          transition: "right var(--t) var(--ease-out)",
+        }}
+      >
+        <StormOverview
+          storms={storms}
+          scope={store.scope}
+          selected={store.stormId}
+          compared={compared}
+          onScope={(scope) => set({ scope })}
+          onSelect={(id) => {
+            set({ stormId: id, at: null, probe: null });
+            setProbe(null);
+            setImpact(null);
+          }}
+          onToggleCompare={(id) =>
+            setCompared((prev) => prev.includes(id)
+              ? prev.filter((x) => x !== id)
+              : [...prev, id])}
+          compact={compact}
+        />
       </div>
 
       {/* --------------------------------------------------------- legend */}
@@ -399,7 +655,7 @@ export default function Explorer() {
           transition: "right var(--t) var(--ease-out)",
         }}
       >
-        <MapLegend startOpen={!compact} />
+        <MapLegend startOpen={!compact && store.view === "analysis"} />
       </div>
 
       {/* ------------------------------------------------- channel age strip */}

@@ -13,7 +13,7 @@
  * cannot be got out of the way is chrome the user cannot dismiss.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { REGIME_COLOR, REGIME_LABEL } from "../api/client";
 import { LAYER_PLAIN, REGIME_PLAIN } from "../api/plain";
 import type { Layer } from "../api/types";
@@ -21,6 +21,13 @@ import { useStore } from "../state/store";
 
 export default function MapLegend({ startOpen = true }: { startOpen?: boolean }) {
   const [open, setOpen] = useState(startOpen);
+
+  /* `startOpen` seeds the initial state, which is not enough: the Explorer
+     folds the legend when it switches to Impact Mode, and a seed value is read
+     once at mount, so the legend stayed open over the map. Following the prop
+     when it changes makes the caller's intent take effect, while leaving the
+     panel's own toggle in charge between changes. */
+  useEffect(() => { setOpen(startOpen); }, [startOpen]);
   const ordered = useStore((s) => s.visibleOrdered)();
   const active = useStore((s) => s.active);
 

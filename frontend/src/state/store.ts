@@ -39,6 +39,24 @@ export interface ViewState {
   playing: boolean;
   probe: { lat: number; lon: number } | null;
   panel: "layers" | "legend" | "probe";
+
+  /* ---- Impact Mode.
+   *
+   * `view` is the product's main division. Analysis answers what the storm is
+   * doing; Impact answers what that means on the ground. They share the map,
+   * the storm and the clock, so switching is a change of question rather than
+   * a change of page.
+   */
+  view: "analysis" | "impact";
+
+  /** Which storms are drawn. `one` is the detailed single-storm workspace;
+   *  `recent` and `all` draw the overview. */
+  scope: "one" | "recent" | "all";
+
+  /** Scenario corridor half-width in km, or null when off. This is an
+   *  illustrative uncertainty band, not a model output, and every surface that
+   *  renders it says so. */
+  scenarioKm: number | null;
 }
 
 interface Store extends ViewState {
@@ -82,6 +100,9 @@ export const DEFAULT_VIEW: ViewState = {
   playing: false,
   probe: null,
   panel: "layers",
+  view: "analysis",
+  scope: "one",
+  scenarioKm: null,
 };
 
 export const useStore = create<Store>((setState, getState) => ({
@@ -215,6 +236,13 @@ export const useStore = create<Store>((setState, getState) => ({
     if (pitch !== undefined) patch.pitch = pitch;
 
     if (p.get("follow")) patch.follow = p.get("follow") === "1";
+    if (p.get("view") === "impact" || p.get("view") === "analysis") {
+      patch.view = p.get("view") as ViewState["view"];
+    }
+    const sc = p.get("scope");
+    if (sc === "one" || sc === "recent" || sc === "all") patch.scope = sc;
+    const scen = numOf("scenario");
+    if (scen !== undefined) patch.scenarioKm = scen > 0 ? scen : null;
     const sp = numOf("speed");
     if (sp === 1 || sp === 5 || sp === 20) patch.speed = sp;
 
@@ -259,6 +287,13 @@ export const useStore = create<Store>((setState, getState) => ({
     // the default on, a user who turned follow off would get it back on the
     // next reload, and the permalink would no longer reproduce the view.
     if (s.follow !== DEFAULT_VIEW.follow) p.set("follow", s.follow ? "1" : "0");
+    // Impact Mode, the storm scope and the scenario width. Only written
+    // when they differ from the default, so an ordinary Analysis link
+    // stays short, and always written when they do, so a demo step is
+    // still one link.
+    if (s.view !== DEFAULT_VIEW.view) p.set("view", s.view);
+    if (s.scope !== DEFAULT_VIEW.scope) p.set("scope", s.scope);
+    if (s.scenarioKm) p.set("scenario", String(s.scenarioKm));
     if (s.speed !== 1) p.set("speed", String(s.speed));
     if (s.probe) {
       p.set("plat", s.probe.lat.toFixed(4));

@@ -82,6 +82,17 @@ export interface StormSummary {
   peak_category: string | null;
   made_landfall: boolean;
   featured_slug: string | null;
+  /* Last recorded state, so the overview can draw and label every storm from
+     one request rather than fetching 110 tracks to find 110 end points. */
+  last_lat: number | null;
+  last_lon: number | null;
+  last_vmax_kt: number | null;
+  last_category: string | null;
+  last_regime: string;
+  heading_deg: number | null;
+  heading_compass: string | null;
+  speed_kt: number | null;
+  last_over_land: boolean | null;
 }
 
 export interface SensorMode {
@@ -344,4 +355,143 @@ export interface ModeInfo {
   capabilities: Record<string, unknown>;
   warnings: string[];
   disclaimer: string;
+}
+
+/* ---------------------------------------------------------------- hazard
+ *
+ * Impact Mode's contracts. Every one of these carries a `basis` string, and it
+ * is rendered rather than dropped: the hazard call is a rule set over the
+ * model's outputs, not a second model, and the UI has to say so.
+ */
+
+export type HazardKey =
+  | "intensification" | "wind" | "wind_and_rain" | "rainfall" | "flood"
+  | "weakening";
+
+export type RiskLevel = "low" | "moderate" | "high";
+export type Confidence = "high" | "medium" | "low" | "insufficient";
+
+export interface HazardDriver {
+  label: string;
+  detail: string;
+  direction: "up" | "down" | "flat";
+}
+
+export interface Hazard {
+  key: HazardKey;
+  label: string;
+  technical: string;
+  icon: string;
+  colour: string;
+  why_this_matters: string;
+  valid_time: string;
+  confidence: Confidence;
+  drivers: HazardDriver[];
+  secondary: { key: HazardKey; label: string }[];
+  basis: string;
+  storm_id: string;
+  index: number;
+  inputs: Record<string, number | string | null>;
+  synthetic_inputs: string[];
+  synthetic_note: string;
+}
+
+export interface HazardPhase {
+  hazard: HazardKey;
+  label: string;
+  colour: string;
+  start_time: string;
+  end_time: string;
+  start_index: number;
+  end_index: number;
+  n: number;
+}
+
+export interface HazardTimeline {
+  storm_id: string;
+  points: {
+    valid_time: string; index: number; hazard: HazardKey; label: string;
+    colour: string; vmax_kt: number | null; rain_24h_mm: number | null;
+    over_land: boolean | null;
+  }[];
+  phases: HazardPhase[];
+  hazards: Record<HazardKey, { label: string; technical: string; icon: string;
+                               colour: string; plain: string }>;
+  basis: string;
+  note: string;
+}
+
+export interface ChangeRow {
+  label: string;
+  plain: string;
+  status: "ok" | "unavailable";
+  reason?: string;
+  from?: number;
+  to?: number;
+  delta?: number;
+  unit?: string;
+  direction?: "up" | "down" | "flat";
+  worsening?: boolean;
+}
+
+export interface Changes {
+  storm_id: string;
+  available: boolean;
+  reason?: string;
+  window_hours?: number;
+  from_time?: string;
+  to_time?: string;
+  rows: ChangeRow[];
+  hazard_shift?: {
+    from: { key: HazardKey; label: string };
+    to: { key: HazardKey; label: string; why_this_matters: string };
+  } | null;
+  basis?: string;
+}
+
+export interface Concern {
+  key: string;
+  label: string;
+  level: RiskLevel;
+  detail: string;
+}
+
+export interface ImpactEvidence {
+  label: string;
+  detail: string;
+  strength: "strong" | "moderate" | "weak";
+  provenance: string;
+}
+
+export interface LocationImpact {
+  lat: number;
+  lon: number;
+  storm_id: string;
+  storm_name: string;
+  valid_time: string;
+  on_land: boolean;
+  land_fraction: number;
+  district: { name: string; district_id: string } | null;
+  distance_to_centre_km: number;
+  closest_approach_km: number | null;
+  storm_approaching: boolean;
+  conditions: {
+    rain_24h_mm: number | null;
+    soil_moisture: number | null;
+    parametric_wind_kt: number | null;
+    olr_w_m2: number | null;
+  };
+  primary_concern: Concern | null;
+  concerns: Concern[];
+  risk_band: RiskLevel;
+  risk_reason: string;
+  confidence: Confidence;
+  confidence_reason: string;
+  evidence: ImpactEvidence[];
+  /** Categories that need a dataset this build does not have. Rendered as
+   *  unavailable rather than omitted, so a reviewer can see they were
+   *  considered rather than forgotten. */
+  exposure_unavailable: { key: string; label: string; reason: string }[];
+  basis: string;
+  wind_note: string;
 }

@@ -15,8 +15,9 @@
  */
 
 import type {
-  DistrictRisk, Evidence, Freshness, Manifest, ModeInfo, Probe, StormState,
-  StormSummary, Track, Analogue,
+  Changes, DistrictRisk, Evidence, Freshness, Hazard, HazardTimeline,
+  LocationImpact, Manifest, ModeInfo, Probe, StormState, StormSummary, Track,
+  Analogue,
 } from "./types";
 
 const BASE = import.meta.env.VITE_API_BASE ?? "";
@@ -58,6 +59,23 @@ export const api = {
     get<Probe>("/api/probe", { lat, lon, storm_id: stormId, at }),
   districtRisk: (stormId?: string, at?: string) =>
     get<DistrictRisk>("/api/districts/risk", { storm_id: stormId, at }),
+  /* ---- Impact Mode.
+   *
+   * The hazard call is a rule set over the model's outputs rather than a
+   * second model, and every response carries the `basis` string that says so.
+   * The UI renders it. */
+  hazard: (stormId: string, at?: string) =>
+    get<Hazard>(`/api/storms/${encodeURIComponent(stormId)}/hazard`, { at }),
+  hazardTimeline: (stormId: string, maxPoints = 60) =>
+    get<HazardTimeline>(
+      `/api/storms/${encodeURIComponent(stormId)}/hazard/timeline`,
+      { max_points: maxPoints }),
+  changes: (stormId: string, at?: string, hours = 6) =>
+    get<Changes>(`/api/storms/${encodeURIComponent(stormId)}/changes`,
+                 { at, hours }),
+  impact: (lat: number, lon: number, stormId: string, at?: string) =>
+    get<LocationImpact>("/api/impact", { lat, lon, storm_id: stormId, at }),
+
   methods: () => get<any>("/api/methods"),
   capabilities: () => get<any>("/api/capabilities"),
   presets: () => get<{ presets: Record<string, { label: string; bbox: number[] }> }>(
@@ -187,6 +205,27 @@ export const REGIME_COLOR: Record<string, string> = {
   sheared: "#a78bfa",
   post_landfall_remnant: "#fb923c",
   over_land: "#f87171",
+};
+
+/** Risk band colours. Three levels only, because the inputs do not support a
+ *  finer scale and a five-stop ramp would imply precision that is not there. */
+export const BAND_COLOR: Record<string, string> = {
+  low: "#4ade80",
+  moderate: "#fbbf24",
+  high: "#f87171",
+};
+
+export const BAND_LABEL: Record<string, string> = {
+  low: "Low",
+  moderate: "Moderate",
+  high: "High",
+};
+
+export const CONFIDENCE_LABEL: Record<string, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+  insufficient: "Not enough data",
 };
 
 export const RISK_COLOR: Record<string, string> = {
