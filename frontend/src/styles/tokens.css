@@ -1,0 +1,607 @@
+/* TRINETRA design system.
+ *
+ * The reference material is an instrument readout, not a consumer weather app:
+ * near-black ground, hairline rules, a rotating wireframe graticule, monospace
+ * telemetry labels with numeric readouts, and a horizontal ticker along the
+ * bottom edge. That vocabulary suits this product for a reason beyond taste.
+ * The interface has to carry a provenance class, an age and a status on every
+ * single layer at all times, and a dense monospace readout does that without
+ * the labels turning into clutter.
+ *
+ * The provenance convention is expressed here as three reusable treatments and
+ * nowhere else, so a component cannot invent its own. The class comes from the
+ * API; the CSS turns it into a look.
+ */
+
+:root {
+  /* Ground. Near-black with a blue cast, because the map's ocean is blue-black
+     and a neutral grey chrome reads as a different product bolted on. */
+  --bg: #070a10;
+  --bg-1: #0b0f17;
+  --bg-2: #10161f;
+  --bg-3: #161d28;
+  --bg-raise: #1b2430;
+
+  /* Hairlines. Three weights: structural, panel, and the faint graticule. */
+  --line: #1e2836;
+  --line-soft: #172029;
+  --line-strong: #2c3846;
+  --graticule: #16202c;
+
+  /* Type */
+  --fg: #e8eef6;
+  --fg-1: #aab8c8;
+  --fg-2: #74849a;
+  --fg-3: #4c5a6d;
+
+  /* Accent. Cyan-blue for the system itself, so it never collides with the
+     enhanced-IR palette, which owns warm colours. */
+  --accent: #6aa9ff;
+  --accent-dim: #2d5c9e;
+  --accent-glow: rgba(106, 169, 255, 0.18);
+
+  /* Status. Live is green, replay is amber, and they are never both on. */
+  --live: #4ade80;
+  --replay: #fbbf24;
+  --warn: #fb923c;
+  --alert: #f87171;
+  --ok: #4ade80;
+
+  /* Provenance classes. One colour per class, used for chips, borders and
+     badges everywhere. */
+  --class-o: #7dd3fc; /* observed */
+  --class-r: #c4b5fd; /* reanalysis */
+  --class-d: #fca5a5; /* derived */
+
+  /* Regime colours for the track. The land-sea transition has to be legible at
+     a glance, so maritime and over-land sit at opposite ends of the hue wheel. */
+  --regime-maritime: #38bdf8;
+  --regime-sheared: #a78bfa;
+  --regime-postlandfall: #fb923c;
+  --regime-overland: #f87171;
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo,
+    Consolas, monospace;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --r-sm: 3px;
+  --r: 5px;
+  --r-lg: 10px;
+
+  /* Motion. Two curves and three durations, used everywhere.
+     `--ease-out` for reveals, `--ease-spring` for anything that settles into
+     place, which is the pin-drop feel from the reference. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 140ms;
+  --t: 260ms;
+  --t-slow: 620ms;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.6), 0 24px 64px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* A very faint film grain over the whole page. The reference footage has it and
+   it does real work: it stops large flat dark areas from banding on cheap
+   projectors, which is what a hackathon demo runs on. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- type */
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The telemetry label from the reference: uppercase, wide-tracked, small,
+   dim. Used for every field name in every readout. */
+.tele {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.dim {
+  color: var(--fg-2);
+}
+.dimmer {
+  color: var(--fg-3);
+}
+
+/* ---------------------------------------------------------------- surfaces */
+
+.panel {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.hair {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 0;
+}
+
+/* Full-bleed crosshair rules, straight from the reference frames. Decorative,
+   but they give the eye a horizon in an otherwise floating dark layout. */
+.rule-h,
+.rule-v {
+  position: absolute;
+  background: var(--line-soft);
+  pointer-events: none;
+}
+.rule-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.rule-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+/* ---------------------------------------------------------------- provenance
+ *
+ * These three classes are the whole convention. A layer chip gets exactly one
+ * of them, applied from the manifest's `class` field, and nothing else in the
+ * codebase is allowed to style a chip.
+ */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  border: 1px solid transparent;
+}
+
+/* Observed: solid, continuous. No hatching, no dashes. */
+.chip.cls-O {
+  color: var(--class-o);
+  background: color-mix(in srgb, var(--class-o) 12%, transparent);
+  border-color: color-mix(in srgb, var(--class-o) 34%, transparent);
+}
+
+/* Reanalysis: dotted border and a muted fill. Reads as adjacent to observed
+   but visibly not the same thing. */
+.chip.cls-R {
+  color: var(--class-r);
+  background: color-mix(in srgb, var(--class-r) 8%, transparent);
+  border-color: color-mix(in srgb, var(--class-r) 45%, transparent);
+  border-style: dotted;
+  border-width: 1.5px;
+}
+
+/* Derived: hatched. The diagonal stripe is the signal that a model produced
+   this, and it is deliberately the most visually intrusive of the three. */
+.chip.cls-D {
+  color: var(--class-d);
+  border-color: color-mix(in srgb, var(--class-d) 40%, transparent);
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--class-d) 20%, transparent) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+.swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: none;
+}
+.swatch.cls-O {
+  background: var(--class-o);
+}
+.swatch.cls-R {
+  background: var(--class-r);
+  border: 1.5px dotted color-mix(in srgb, var(--class-r) 70%, black);
+}
+.swatch.cls-D {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--class-d) 0 2px,
+    transparent 2px 4px
+  );
+  outline: 1px solid color-mix(in srgb, var(--class-d) 55%, transparent);
+}
+
+/* A layer past its amber threshold. Dimmed and hatched, per the spec. */
+.stale {
+  opacity: 0.55;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(251, 191, 36, 0.12) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+.badge-tri {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  padding: 1px 4px;
+  border-radius: 2px;
+  color: var(--class-d);
+  border: 1px solid color-mix(in srgb, var(--class-d) 40%, transparent);
+}
+
+/* ---------------------------------------------------------------- mode badge */
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.mode-badge.live {
+  color: var(--live);
+  border-color: color-mix(in srgb, var(--live) 40%, transparent);
+  background: color-mix(in srgb, var(--live) 10%, transparent);
+}
+.mode-badge.replay {
+  color: var(--replay);
+  border-color: color-mix(in srgb, var(--replay) 40%, transparent);
+  background: color-mix(in srgb, var(--replay) 10%, transparent);
+}
+
+.pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2.1s var(--ease-out) infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+/* ---------------------------------------------------------------- controls */
+
+button,
+.btn {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--fg-1);
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+button:hover,
+.btn:hover {
+  background: var(--bg-raise);
+  border-color: var(--line-strong);
+  color: var(--fg);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+button.primary {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 500;
+}
+button.primary:hover {
+  background: #85b9ff;
+}
+button.active {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-glow);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--line-strong);
+  border-radius: 2px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg);
+  transition: transform var(--t-fast) var(--ease-spring);
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.35);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- motion
+ *
+ * The reference footage moves in three ways worth borrowing: a slow continuous
+ * rotation on the wireframe, staggered reveals as content enters, and a spring
+ * settle on anything that lands. All three are here as reusable classes.
+ */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise var(--t-slow) var(--ease-out) both;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade {
+  animation: fade var(--t-slow) var(--ease-out) both;
+}
+
+@keyframes sweep {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* Used on hairlines so a rule draws itself in rather than appearing. */
+.sweep {
+  animation: sweep 900ms var(--ease-out) both;
+}
+
+@keyframes drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* The pin-drop settle. */
+.drop {
+  animation: drop 700ms var(--ease-spring) both;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.count-in {
+  animation: count-in var(--t) var(--ease-out) both;
+}
+
+/* Stagger utility. Children reveal in sequence rather than together, which is
+   what makes a dense readout feel assembled instead of dumped. */
+.stagger > * {
+  animation: rise var(--t-slow) var(--ease-out) both;
+}
+.stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 55ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 110ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 165ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 220ms;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 275ms;
+}
+.stagger > *:nth-child(7) {
+  animation-delay: 330ms;
+}
+.stagger > *:nth-child(8) {
+  animation-delay: 385ms;
+}
+.stagger > *:nth-child(n + 9) {
+  animation-delay: 440ms;
+}
+
+/* A bar that grows from zero. Used by the evidence panel. */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.grow-x {
+  transform-origin: left;
+  animation: grow-x 780ms var(--ease-out) both;
+}
+
+/* Anyone who has asked their system not to animate gets no animation. This is
+   not optional politeness: vestibular triggers are real and the whole page is
+   in motion by default. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------- scrollbars */
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-3);
+}
+
+/* ---------------------------------------------------------------- tables */
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+table.data th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  font-weight: 400;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+table.data td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--fg-1);
+}
+table.data td.num,
+table.data th.num {
+  text-align: right;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+table.data tbody tr:hover td {
+  background: var(--bg-2);
+}
+
+/* Wide content scrolls inside its own container. The page body never scrolls
+   sideways. */
+.scroll-x {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.disclaimer {
+  font-size: 11px;
+  color: var(--fg-3);
+  border-top: 1px solid var(--line-soft);
+  padding-top: 8px;
+}

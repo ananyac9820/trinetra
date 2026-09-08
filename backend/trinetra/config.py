@@ -55,6 +55,9 @@ SEQ_LEN = 8
 SEQ_STEP_HOURS = 3.0
 
 BASINS = ["bay_of_bengal", "arabian_sea", "land"]
+# IMD intensity scale codes, in ascending order. Mirrored here from
+# ingest.ibtracs so the model package does not import the ingest package.
+IMD_CATEGORIES = ["D", "DD", "CS", "SCS", "VSCS", "ESCS", "SuCS"]
 REGIMES = ["maritime_mature", "sheared", "post_landfall_remnant", "over_land"]
 DETECTION_CLASSES = ["cyclone", "monsoon_depression", "other"]
 DVORAK_SCENES = [

@@ -284,16 +284,43 @@ def wv_field(ir: np.ndarray, grid: StormGrid, rng: np.random.Generator,
     return np.clip(wv, 190.0, 265.0).astype(np.float32)
 
 
-def qpe_field(ir: np.ndarray, vmax_kt: float, rng: np.random.Generator) -> np.ndarray:
+def qpe_field(ir: np.ndarray, vmax_kt: float, rng: np.random.Generator,
+              land_frac: np.ndarray | None = None, month: int = 6,
+              over_land: bool = False) -> np.ndarray:
     """Precipitation rate in mm h-1, from cloud-top temperature.
 
     A power-law fit of rain rate against window brightness temperature, of the
     kind the operational GOES precipitation index uses. Zero above 245 K, rising
     steeply as the tops get colder.
+
+    Rainfall decouples from wind after landfall
+    -------------------------------------------
+    Scaling rain rate by maximum wind is reasonable over water and wrong over
+    land, and getting it wrong here would contradict the project's own thesis.
+    Biparjoy dropped 471 mm at Ahore and breached a dam at Sanchore as a
+    weakening inland remnant whose wind had already collapsed. A rain model tied
+    to Vmax produces almost nothing for that system, which is exactly the
+    failure that makes existing cyclone products stop being useful at the coast.
+
+    So over land the wind scaling is replaced by a moisture-convergence term
+    that does not decay with intensity. A remnant low embedded in a monsoon
+    moisture field is a rainfall producer long after it stops being a cyclone,
+    which is the whole reason the regime head and this channel exist.
     """
     x = np.clip((245.0 - ir) / 55.0, 0.0, 1.6)
-    rate = 46.0 * x**2.1 * float(np.clip(vmax_kt / 60.0, 0.35, 1.5))
-    rate *= 1.0 + 0.30 * _correlated_noise(ir.shape[0], 4.0, rng)
+
+    if over_land and land_frac is not None:
+        # Monsoon-season moisture convergence, strongest in the core months.
+        monsoon = 1.0 if month in (6, 7, 8, 9) else 0.55
+        # Weak systems are not weak rain producers inland, so the floor is high.
+        scaling = monsoon * float(np.clip(0.85 + vmax_kt / 90.0, 0.85, 1.6))
+        rate = 52.0 * x**1.7 * scaling
+        # Enhanced over land, retained over adjacent water.
+        rate = rate * (0.55 + 0.65 * np.clip(land_frac, 0.0, 1.0))
+    else:
+        rate = 46.0 * x**2.1 * float(np.clip(vmax_kt / 60.0, 0.35, 1.5))
+
+    rate = rate * (1.0 + 0.30 * _correlated_noise(ir.shape[0], 4.0, rng))
     return np.clip(rate, 0.0, 160.0).astype(np.float32)
 
 
@@ -538,7 +565,10 @@ def swath_mask(grid: StormGrid, valid_time, kind: str,
     # A swath crosses the domain as a band at the instrument's own track angle.
     x, y = grid.xy_km()
     angle = np.radians(day_seed.uniform(-28.0, 28.0) + (98.0 if kind == "pmw" else 82.0))
-    offset = day_seed.uniform(-grid.half_km * 0.55, grid.half_km * 0.55)
+    # Cross-track offset of the swath centre from the domain centre. Sampled
+    # across a range wider than the domain so a pass can genuinely miss the
+    # storm, which is what makes the availability mask non-trivial.
+    offset = day_seed.uniform(-grid.half_km * 1.25, grid.half_km * 1.25)
     across = x * np.cos(angle) + y * np.sin(angle) - offset
     covered = np.abs(across) <= width / 2.0
     return covered, age_min

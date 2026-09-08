@@ -1,0 +1,312 @@
+/* The time axis.
+ *
+ * Two things on it do work no general weather map does.
+ *
+ * IMD bulletin times are drawn as ticks on the axis itself, so the
+ * between-bulletin gap is visible without a separate chart. The argument the
+ * whole nowcasting claim rests on is that official bulletins are three to six
+ * hourly and leave blind windows; putting the ticks on the axis makes that
+ * argument out of geometry rather than out of a sentence on a slide.
+ *
+ * Playback advances the inference index, not wall-clock seconds. At 20x the
+ * intent is twenty inference steps per unit time, not a twenty-times-faster
+ * animation, and the difference matters because the underlying data is a
+ * discrete sequence of granules rather than a continuous field.
+ *
+ * Keyboard: space to play or pause, arrows to step, L to cycle layers, F for
+ * follow. Those are the specified bindings.
+ */
+
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { formatUtc, formatUtcShort, REGIME_COLOR } from "../api/client";
+import type { Track } from "../api/types";
+import { useStore } from "../state/store";
+
+interface Props {
+  track: Track | null;
+}
+
+const SPEEDS: (1 | 5 | 20)[] = [1, 5, 20];
+
+export default function TimeScrubber({ track }: Props) {
+  const { at, playing, speed, follow, active, layersById } = useStore();
+  const set = useStore((s) => s.set);
+  const toggleLayer = useStore((s) => s.toggleLayer);
+  const timer = useRef<number | null>(null);
+
+  const points = track?.points ?? [];
+  const index = useMemo(() => {
+    if (!at || !points.length) return Math.max(points.length - 1, 0);
+    const t = new Date(at).getTime();
+    // Snap backwards: the most recent fix at or before the scrubber position.
+    // Snapping forward would show an observation that had not happened yet.
+    let best = 0;
+    for (let i = 0; i < points.length; i++) {
+      if (new Date(points[i].valid_time).getTime() <= t) best = i;
+      else break;
+    }
+    return best;
+  }, [at, points]);
+
+  const goTo = useCallback(
+    (i: number) => {
+      if (!points.length) return;
+      const clamped = Math.max(0, Math.min(points.length - 1, i));
+      set({ at: points[clamped].valid_time });
+    },
+    [points, set],
+  );
+
+  /* Playback advances the inference index. */
+  useEffect(() => {
+    if (timer.current) {
+      window.clearInterval(timer.current);
+      timer.current = null;
+    }
+    if (!playing || points.length < 2) return;
+    // One inference step per tick; the speed sets the tick rate.
+    const period = Math.round(1100 / speed);
+    timer.current = window.setInterval(() => {
+      const s = useStore.getState();
+      const t = s.at ? new Date(s.at).getTime() : 0;
+      let cur = 0;
+      for (let i = 0; i < points.length; i++) {
+        if (new Date(points[i].valid_time).getTime() <= t) cur = i;
+        else break;
+      }
+      if (cur >= points.length - 1) {
+        set({ playing: false });
+        return;
+      }
+      set({ at: points[cur + 1].valid_time });
+    }, period);
+    return () => {
+      if (timer.current) window.clearInterval(timer.current);
+    };
+  }, [playing, speed, points, set]);
+
+  /* Keyboard bindings. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      switch (e.key) {
+        case " ":
+          e.preventDefault();
+          set({ playing: !useStore.getState().playing });
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          set({ playing: false });
+          goTo(index + 1);
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          set({ playing: false });
+          goTo(index - 1);
+          break;
+        case "f":
+        case "F":
+          set({ follow: !useStore.getState().follow });
+          break;
+        case "l":
+        case "L": {
+          // Cycle through the raster layers, so one key steps a demo through
+          // the observed stack without hunting in the panel.
+          const rasters = Object.values(layersById)
+            .filter((l) => l.render === "raster" && l.group === "observed")
+            .map((l) => l.id);
+          if (!rasters.length) break;
+          const on = rasters.filter((id) => active.includes(id));
+          const next = on.length
+            ? rasters[(rasters.indexOf(on[on.length - 1]) + 1) % rasters.length]
+            : rasters[0];
+          for (const id of on) toggleLayer(id);
+          toggleLayer(next);
+          break;
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, goTo, set, active, layersById, toggleLayer]);
+
+  if (!points.length) {
+    return (
+      <div style={{ padding: "10px 12px", borderTop: "1px solid var(--line)" }}>
+        <span className="tele">No track loaded</span>
+      </div>
+    );
+  }
+
+  const t0 = new Date(points[0].valid_time).getTime();
+  const t1 = new Date(points[points.length - 1].valid_time).getTime();
+  const span = Math.max(t1 - t0, 1);
+  const pct = (iso: string) =>
+    ((new Date(iso).getTime() - t0) / span) * 100;
+
+  const current = points[index];
+  const bulletins = track?.bulletin_times ?? [];
+
+  return (
+    <div
+      style={{
+        padding: "8px 12px 10px", borderTop: "1px solid var(--line)",
+        background: "var(--bg-1)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <button
+          onClick={() => set({ playing: !playing })}
+          className={playing ? "active" : undefined}
+          title="space"
+          style={{ width: 30, padding: "3px 0", fontFamily: "var(--mono)" }}
+        >
+          {playing ? "❙❙" : "▶"}
+        </button>
+        <button onClick={() => { set({ playing: false }); goTo(index - 1); }}
+                title="left arrow: step back one inference step"
+                style={{ padding: "3px 7px" }}>
+          ◀
+        </button>
+        <button onClick={() => { set({ playing: false }); goTo(index + 1); }}
+                title="right arrow: step forward one inference step"
+                style={{ padding: "3px 7px" }}>
+          ▶
+        </button>
+
+        <div style={{ display: "flex", gap: 3, marginLeft: 2 }}>
+          {SPEEDS.map((sp) => (
+            <button
+              key={sp}
+              className={speed === sp ? "active" : undefined}
+              onClick={() => set({ speed: sp })}
+              title="playback advances the inference index, not wall-clock seconds"
+              style={{ padding: "3px 7px", fontFamily: "var(--mono)", fontSize: 11 }}
+            >
+              {sp}×
+            </button>
+          ))}
+        </div>
+
+        <button
+          className={follow ? "active" : undefined}
+          onClick={() => set({ follow: !follow })}
+          title="F: lock the viewport to the moving centre. Off by default; disorienting when on."
+          style={{ padding: "3px 8px", fontSize: 11 }}
+        >
+          Follow
+        </button>
+
+        <span style={{ flex: 1 }} />
+
+        <div style={{ textAlign: "right" }}>
+          <div className="num" style={{ fontSize: 12.5, color: "var(--fg)" }}>
+            {formatUtc(current.valid_time)}
+          </div>
+          <div className="tele">
+            step {index + 1} of {points.length}
+            {current.regime && (
+              <>
+                {" · "}
+                <span style={{ color: REGIME_COLOR[current.regime] }}>
+                  {current.regime.replace(/_/g, " ")}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* The axis. */}
+      <div style={{ position: "relative", height: 34 }}>
+        {/* Regime bands behind the axis, so the land-sea transition is visible
+            on the timeline as well as on the map. */}
+        <div style={{ position: "absolute", left: 0, right: 0, top: 6, height: 5,
+                      borderRadius: 3, overflow: "hidden", background: "var(--bg-3)" }}>
+          {track!.regime_segments.map((seg, i) => {
+            const a = pct(seg.start_time);
+            const b = pct(seg.end_time);
+            return (
+              <div
+                key={i}
+                className="sweep"
+                style={{
+                  position: "absolute", left: `${a}%`, width: `${Math.max(b - a, 0.6)}%`,
+                  top: 0, bottom: 0,
+                  background: REGIME_COLOR[seg.regime] ?? "var(--accent)",
+                  opacity: 0.75,
+                  animationDelay: `${i * 70}ms`,
+                }}
+                title={seg.regime.replace(/_/g, " ")}
+              />
+            );
+          })}
+        </div>
+
+        {/* Progress to the current position. */}
+        <div
+          style={{
+            position: "absolute", left: 0, top: 6, height: 5,
+            width: `${pct(current.valid_time)}%`,
+            borderRadius: 3,
+            background: "linear-gradient(90deg, transparent, var(--accent-glow))",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Landfall marker. */}
+        {track!.landfall_index !== null && points[track!.landfall_index!] && (
+          <div
+            title="coastline crossing"
+            style={{
+              position: "absolute", left: `${pct(points[track!.landfall_index!].valid_time)}%`,
+              top: 0, bottom: 14, width: 1.5,
+              background: "var(--regime-overland)", opacity: 0.85,
+            }}
+          />
+        )}
+
+        {/* IMD bulletin ticks. The gap between them is the argument. */}
+        {bulletins.map((b, i) => (
+          <div
+            key={i}
+            title={`IMD bulletin ${formatUtcShort(b)}`}
+            style={{
+              position: "absolute", left: `${pct(b)}%`, top: 15, height: 6,
+              width: 1, background: "var(--fg-3)",
+            }}
+          />
+        ))}
+
+        <input
+          type="range"
+          min={0}
+          max={points.length - 1}
+          step={1}
+          value={index}
+          onChange={(e) => { set({ playing: false }); goTo(Number(e.target.value)); }}
+          aria-label="time"
+          style={{
+            position: "absolute", left: 0, right: 0, top: 3, width: "100%",
+            background: "transparent",
+          }}
+        />
+
+        <div style={{ position: "absolute", left: 0, bottom: -2 }} className="tele">
+          {formatUtcShort(points[0].valid_time)}
+        </div>
+        <div style={{ position: "absolute", right: 0, bottom: -2 }} className="tele">
+          {formatUtcShort(points[points.length - 1].valid_time)}
+        </div>
+        <div
+          style={{ position: "absolute", left: "50%", bottom: -2,
+                   transform: "translateX(-50%)" }}
+          className="tele"
+        >
+          IMD bulletins ▏ ticks
+        </div>
+      </div>
+    </div>
+  );
+}

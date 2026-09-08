@@ -152,8 +152,12 @@ class Granule:
 class GranuleStore:
     """Resolves granules for a storm and time, with an LRU cache."""
 
+    # The cache is sized so a training epoch regenerates as little as possible.
+    # Granules are deterministic in (storm, time, channel) so regeneration is
+    # always correct, just wasted: at 96 px one granule is about 300 kB, so 700
+    # of them is roughly 200 MB and covers a large fraction of a training set.
     def __init__(self, labels: pd.DataFrame, size_px: int = C.GRID_SIZE_PX,
-                 cache_size: int = 96, tier: str = "archive"):
+                 cache_size: int = 700, tier: str = "archive"):
         self.labels = labels.sort_values(["sid", "valid_time"]).reset_index(drop=True)
         self.size_px = size_px
         self.tier = tier
@@ -235,7 +239,10 @@ class GranuleStore:
         ages[CH["land"]] = 0.0
 
         ir = synth.ir_field(grid, vmax, pmin, lat, shear, shear_dir, motion_dir, land, rng)
-        qpe = synth.qpe_field(ir, vmax, rng)
+        over_land = bool(float(row["dist2land_km"]) <= 0) if np.isfinite(
+            row["dist2land_km"]) else False
+        qpe = synth.qpe_field(ir, vmax, rng, land_frac=land, month=when.month,
+                              over_land=over_land)
 
         # --- tier gating. This is the whole two-tier argument, in code.
         live = tier == "live"
@@ -272,7 +279,12 @@ class GranuleStore:
 
         # --- overpass-limited instruments
         pmw_cov, pmw_age = synth.swath_mask(grid, when, "pmw", rng)
-        if pmw_age is not None and pmw_cov.any():
+        # A swath is only counted as covering this storm if it reaches the inner
+        # core. Microwave exists in this stack to see through the cirrus canopy
+        # to the convective structure, so a pass that clips the outer rainbands
+        # and misses the centre has not given you the thing you wanted, and
+        # recording it as present would overstate coverage.
+        if pmw_age is not None and (pmw_cov & (grid.radius_km() <= 150.0)).any():
             for name, freq in (("pmw89", 89.0), ("pmw37", 37.0)):
                 fld = synth.pmw_field(ir, grid, freq, rng)
                 data[CH[name]] = np.where(pmw_cov, fld, np.nan).astype(np.float32)
@@ -283,7 +295,9 @@ class GranuleStore:
                 absent_reason[name] = "no microwave overpass inside the staleness window"
 
         scat_cov, scat_age = synth.swath_mask(grid, when, "scat", rng)
-        if scat_age is not None and scat_cov.any():
+        # Same rule for the scatterometer, at a wider radius: surface wind
+        # structure is useful out to the gale radius, not only at the centre.
+        if scat_age is not None and (scat_cov & (grid.radius_km() <= 250.0)).any():
             speed, _u, _v = synth.scat_field(
                 grid, vmax, pmin, lat, float(row["storm_motion_u_kt"] or 0.0),
                 float(row["storm_motion_v_kt"] or 0.0), qpe, land, rng,

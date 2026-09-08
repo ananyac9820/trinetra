@@ -150,8 +150,10 @@ def main() -> int:
         print(f"  {name:<32} n={rep['n']:>5}  base rate {rep['base_rate']:.4f}  "
               f"mean forecast {rep['mean_forecast']:.4f}")
         print(f"    Brier {rep['brier']:.5f}   BSS {str(bss_ci)}   AUC {str(auc_ci)}")
-        print(f"    at p>={c['threshold']}:  POD {c['pod']:.3f}  FAR {c['far']:.3f}  "
-              f"CSI {c['csi']:.3f}   hits {c['hits']} misses {c['misses']} "
+        fmt = lambda v: "  n/a" if v is None else f"{v:.3f}"
+        print(f"    at p>={c['threshold']}:  POD {fmt(c['pod'])}  "
+              f"FAR {fmt(c['far'])}  CSI {fmt(c['csi'])}   "
+              f"hits {c['hits']} misses {c['misses']} "
               f"false alarms {c['false_alarms']}")
     report["forecast"]["ri_24h"] = ri_entries
     report["forecast"]["ri_24h_note"] = (
@@ -216,7 +218,8 @@ def main() -> int:
     print("\n  Independent-truth subset: ABSENT (0 cases). No SAR-derived Vmax was")
     print("  pulled, so the non-Dvorak RMSE is not reported rather than estimated.")
 
-    OUT_JSON.write_text(json.dumps(report, indent=2, default=float), encoding="utf-8")
+    OUT_JSON.write_text(json.dumps(M.jsonable(report), indent=2, default=str),
+                        encoding="utf-8")
     print(f"\nwrote {OUT_JSON}")
     return 0
 

@@ -29,6 +29,33 @@ INTENSITY_BINS = [
 ]
 
 
+def jsonable(obj):
+    """Recursively replace NaN and infinity with None.
+
+    JSON has no representation for either, so a metric that is genuinely
+    undefined has to travel as null. This matters for a real case rather than a
+    hypothetical one: the climatology baseline issues no forecasts above the
+    operational threshold, so its false-alarm ratio divides by zero, and a
+    report containing that NaN cannot be serialised at all.
+
+    None is also the honest encoding. An undefined false-alarm ratio is not
+    zero, and writing zero would claim the baseline never raises a false alarm
+    when in fact it never raises anything.
+    """
+    if isinstance(obj, dict):
+        return {k: jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [jsonable(v) for v in obj]
+    if isinstance(obj, (np.floating, float)):
+        f = float(obj)
+        return None if not np.isfinite(f) else f
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.bool_,)):
+        return bool(obj)
+    return obj
+
+
 def _clean(y_true, y_pred) -> tuple[np.ndarray, np.ndarray]:
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
@@ -223,15 +250,22 @@ def contingency(y_true, p_pred, threshold: float) -> dict:
     miss = int(np.sum(~yes & (t == 1)))
     false_alarm = int(np.sum(yes & (t == 0)))
     correct_neg = int(np.sum(~yes & (t == 0)))
-    pod = hit / (hit + miss) if hit + miss else float("nan")
-    far = false_alarm / (hit + false_alarm) if hit + false_alarm else float("nan")
-    csi = hit / (hit + miss + false_alarm) if hit + miss + false_alarm else float("nan")
+    # None rather than NaN where the ratio is undefined. The climatology
+    # baseline forecasts nothing above threshold, so hits + false alarms is
+    # zero and its false-alarm ratio has no value. Reporting 0.0 there would
+    # read as a perfect false-alarm record.
+    pod = hit / (hit + miss) if hit + miss else None
+    far = false_alarm / (hit + false_alarm) if hit + false_alarm else None
+    denom = hit + miss + false_alarm
+    csi = hit / denom if denom else None
     return {
         "threshold": round(float(threshold), 3),
         "hits": hit, "misses": miss,
         "false_alarms": false_alarm, "correct_negatives": correct_neg,
-        "pod": round(float(pod), 4), "far": round(float(far), 4),
-        "csi": round(float(csi), 4),
+        "pod": None if pod is None else round(float(pod), 4),
+        "far": None if far is None else round(float(far), 4),
+        "csi": None if csi is None else round(float(csi), 4),
+        "forecasts_issued": hit + false_alarm,
     }
 
 
