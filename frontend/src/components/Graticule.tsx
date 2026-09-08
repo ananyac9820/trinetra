@@ -22,6 +22,9 @@ interface Props {
   /** Seconds per full rotation. Slow: the reference footage drifts. */
   period?: number;
   labels?: { text: string; value: string }[];
+  /** The rotating central meridian readout. Off where it would collide with
+   *  a headline; on where the globe is the readout. */
+  showMeridian?: boolean;
 }
 
 const R = 100; // unit sphere radius in SVG units
@@ -49,7 +52,9 @@ function pathFor(points: ([number, number] | null)[]): string {
   return d;
 }
 
-export default function Graticule({ size = 320, period = 90, labels = [] }: Props) {
+export default function Graticule({
+  size = 320, period = 90, labels = [], showMeridian = true,
+}: Props) {
   const [lon0, setLon0] = useState(60);
   const raf = useRef<number | null>(null);
   const start = useRef<number>(0);
@@ -62,10 +67,18 @@ export default function Graticule({ size = 320, period = 90, labels = [] }: Prop
       setLon0(78);
       return;
     }
+    /* Throttled to about 24 frames a second. Every frame re-projects a few
+       hundred points and re-renders forty SVG paths through React, and at 60
+       the rotation is slow enough that nobody can tell the difference, so
+       three fifths of that work bought nothing. */
+    let last = 0;
     const tick = (t: number) => {
       if (!start.current) start.current = t;
-      const elapsed = (t - start.current) / 1000;
-      setLon0(((elapsed / period) * 360 + 40) % 360);
+      if (t - last > 41) {
+        last = t;
+        const elapsed = (t - start.current) / 1000;
+        setLon0(((elapsed / period) * 360 + 40) % 360);
+      }
       raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
@@ -133,11 +146,11 @@ export default function Graticule({ size = 320, period = 90, labels = [] }: Prop
 
         {parallels.map((d, i) => (
           <path key={`p${i}`} d={d} fill="none" stroke="var(--graticule)"
-                strokeWidth={0.55} />
+                strokeWidth={0.6} />
         ))}
         {meridians.map((d, i) => (
           <path key={`m${i}`} d={d} fill="none" stroke="var(--graticule)"
-                strokeWidth={0.55} />
+                strokeWidth={0.6} />
         ))}
 
         {/* Equator, slightly stronger */}
@@ -206,13 +219,15 @@ export default function Graticule({ size = 320, period = 90, labels = [] }: Prop
         </div>
       )}
 
-      <div
-        className="tele"
-        style={{ position: "absolute", left: "50%", bottom: -6,
-                 transform: "translateX(-50%)" }}
-      >
-        {`lon ${lon0.toFixed(0)}°`}
-      </div>
+      {showMeridian && (
+        <div
+          className="tele"
+          style={{ position: "absolute", left: "50%", bottom: -6,
+                   transform: "translateX(-50%)" }}
+        >
+          {`lon ${lon0.toFixed(0)}°`}
+        </div>
+      )}
     </div>
   );
 }

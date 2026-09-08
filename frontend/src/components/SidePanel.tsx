@@ -11,6 +11,7 @@
 
 import { Link } from "react-router-dom";
 import { formatAge, formatUtc, num, REGIME_LABEL, REGIME_COLOR } from "../api/client";
+import { CATEGORY_PLAIN, REGIME_PLAIN } from "../api/plain";
 import type { StormState } from "../api/types";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -81,7 +82,13 @@ export default function SidePanel({ state, loading }: Props) {
           {c.imd_category_label ??
             (c.imd_category ? CATEGORY_LABEL[c.imd_category] : "unclassified")}
         </div>
-        <div className="tele" style={{ marginTop: 2 }}>
+        {c.imd_category && CATEGORY_PLAIN[c.imd_category] && (
+          <div style={{ fontSize: 10.5, color: "var(--fg-3)", lineHeight: 1.5,
+                        marginTop: 3 }}>
+            {CATEGORY_PLAIN[c.imd_category]}
+          </div>
+        )}
+        <div className="tele" style={{ marginTop: 4 }}>
           {formatUtc(state.valid_time)} · {state.tier} tier
         </div>
       </div>
@@ -90,37 +97,45 @@ export default function SidePanel({ state, loading }: Props) {
           carry. */}
       <div className="panel" style={{ padding: "8px 10px", marginTop: 10 }}>
         <Metric
-          label="VMAX"
+          label="Strongest wind"
+          title="TRINETRA's estimate of the peak sustained wind, with the range it is confident about."
           value={i.vmax_kt === null ? "not issued" : `${i.vmax_kt.toFixed(0)}`}
           unit={i.vmax_kt === null ? "" : "kt"}
           ci={i.ci_kt}
           big
         />
         <Metric
-          label="PMIN"
+          label="Pressure at centre"
+          title="Lower pressure means a stronger storm."
           value={i.pmin_hpa === null ? "not issued" : `${i.pmin_hpa.toFixed(0)}`}
           unit={i.pmin_hpa === null ? "" : "hPa"}
           ci={i.pmin_ci}
         />
-        <div className="hair" style={{ margin: "6px 0" }} />
+        <div className="hair" style={{ margin: "7px 0" }} />
         <Metric
-          label="Best-track"
+          label="Official record"
+          title="The agency best-track value for the same moment, for comparison."
           value={num(i.observed_vmax_kt, 0)}
           unit="kt"
           note={i.label_agency}
         />
         <Metric
-          label="Centre"
+          label="Eye position"
+          title="Where the centre is, and how far off that could be."
           value={`${state.centre.lat.toFixed(1)}°N ${state.centre.lon.toFixed(1)}°E`}
           unit=""
           ci={state.centre.sigma_km}
           ciUnit="km"
         />
-        <Metric label="Scene" value={c.dvorak_scene?.replace(/_/g, " ") ?? "--"}
+        <Metric label="Cloud pattern"
+                title="The shape the storm's clouds make, which is what forecasters have read from satellite images since the 1970s."
+                value={c.dvorak_scene?.replace(/_/g, " ") ?? "--"}
                 unit="" conf={c.dvorak_conf} note={c.dvorak_status} />
         <Metric
-          label="Regime"
-          value={REGIME_LABEL[state.regime.label] ?? state.regime.label}
+          label="Phase"
+          title="Where the storm is in its life: at sea, being torn apart by wind shear, over land, or a decaying remnant."
+          value={REGIME_PLAIN[state.regime.label] ??
+                 REGIME_LABEL[state.regime.label] ?? state.regime.label}
           unit=""
           conf={state.regime.conf}
           colour={REGIME_COLOR[state.regime.label]}
@@ -129,8 +144,12 @@ export default function SidePanel({ state, loading }: Props) {
 
       {/* RI. When it declines, the reason is the most valuable line here. */}
       <div className="panel" style={{ padding: "8px 10px", marginTop: 8 }}>
-        <div className="tele" style={{ marginBottom: 5 }}>
-          Rapid intensification, 24 h
+        <div className="tele" style={{ marginBottom: 2 }}>
+          Chance of rapid strengthening
+        </div>
+        <div style={{ fontSize: 10.5, color: "var(--fg-3)", lineHeight: 1.5,
+                      marginBottom: 7 }}>
+          How likely it is to gain 30 kt or more within 24 hours.
         </div>
         {state.ri.issued && state.ri.p24 !== null ? (
           <>
@@ -186,7 +205,7 @@ export default function SidePanel({ state, loading }: Props) {
       {/* Sensor mode. What the estimate was actually computed from. */}
       <div className="panel" style={{ padding: "8px 10px", marginTop: 8 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-          <span className="tele">Sensor mode</span>
+          <span className="tele">Instruments used</span>
           <span style={{ flex: 1 }} />
           <span
             className="tele"
@@ -200,8 +219,9 @@ export default function SidePanel({ state, loading }: Props) {
           {sm.present.map((p) => p.toUpperCase()).join("+") || "NONE"}
         </div>
         {sm.absent.length > 0 && (
-          <div className="tele" style={{ marginTop: 3 }}>
-            absent: {sm.absent.join(", ")}
+          <div className="tele" style={{ marginTop: 4, whiteSpace: "normal",
+                                         lineHeight: 1.5 }}>
+            not available at this moment: {sm.absent.join(", ")}
           </div>
         )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px", marginTop: 5 }}>
@@ -226,7 +246,7 @@ export default function SidePanel({ state, loading }: Props) {
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
           <span className={`chip cls-D`} style={{ padding: "0 5px", fontSize: 9 }}>D</span>
-          <span className="tele">Disagreement</span>
+          <span className="tele">Do the methods agree?</span>
           <span style={{ flex: 1 }} />
           {d.spread_kt !== null && (
             <span
@@ -241,7 +261,7 @@ export default function SidePanel({ state, loading }: Props) {
           )}
         </div>
         <div style={{ display: "flex", gap: 12, marginTop: 5, flexWrap: "wrap" }}>
-          <Compare label="TRINETRA" v={d.trinetra_kt} />
+          <Compare label="This system" v={d.trinetra_kt} />
           <Compare label="Baseline" v={d.baseline_kt} />
           <Compare label="IMD" v={d.imd_kt} />
         </div>
@@ -249,8 +269,9 @@ export default function SidePanel({ state, loading }: Props) {
         {d.above_threshold && d.driver && (
           <div style={{ fontSize: 10.5, color: "var(--fg-1)", marginTop: 5,
                         lineHeight: 1.45 }}>
-            Above the {d.threshold_kt.toFixed(0)} kt agreement threshold. Driver:{" "}
-            {d.driver}.
+            The estimates differ by more than {d.threshold_kt.toFixed(0)} kt,
+            which is the point at which a forecaster should look closer.
+            Likely reason: {d.driver}.
           </div>
         )}
       </div>
@@ -259,8 +280,12 @@ export default function SidePanel({ state, loading }: Props) {
           destroyed. */}
       {state.abstentions.length > 0 && (
         <div className="panel" style={{ padding: "8px 10px", marginTop: 8 }}>
-          <div className="tele" style={{ marginBottom: 4 }}>
-            Abstentions ({state.abstentions.length})
+          <div className="tele" style={{ marginBottom: 2 }}>
+            Declined to answer ({state.abstentions.length})
+          </div>
+          <div style={{ fontSize: 10.5, color: "var(--fg-3)", lineHeight: 1.5,
+                        marginBottom: 7 }}>
+            Each one names what would have been needed.
           </div>
           {state.abstentions.map((a, k) => (
             <div key={k} style={{ marginBottom: 6 }}>
@@ -276,13 +301,13 @@ export default function SidePanel({ state, loading }: Props) {
       {state.ood && (
         <div className="panel" style={{ padding: "8px 10px", marginTop: 8 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span className="tele">Distribution check</span>
+            <span className="tele">Seen anything like this before?</span>
             <span style={{ flex: 1 }} />
             <span
               className="tele"
               style={{ color: state.ood.in_distribution ? "var(--ok)" : "var(--alert)" }}
             >
-              {state.ood.in_distribution ? "in distribution" : "out of distribution"}
+              {state.ood.in_distribution ? "yes, familiar" : "no, unfamiliar"}
             </span>
           </div>
           <div className="num" style={{ fontSize: 11, marginTop: 3,
@@ -301,7 +326,7 @@ export default function SidePanel({ state, loading }: Props) {
           textDecoration: "none",
         }}
       >
-        Storm detail and evidence →
+        Why it says this →
       </Link>
 
       <div className="disclaimer" style={{ marginTop: 10 }}>
@@ -317,14 +342,22 @@ export default function SidePanel({ state, loading }: Props) {
   );
 }
 
-function Metric({ label, value, unit, ci, ciUnit = "", conf, note, colour, big }: {
+function Metric({ label, value, unit, ci, ciUnit = "", conf, note, colour, big,
+                 title }: {
   label: string; value: string; unit: string; ci?: number | null;
   ciUnit?: string; conf?: number | null; note?: string | null;
-  colour?: string; big?: boolean;
+  colour?: string; big?: boolean; title?: string;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 7, padding: "2px 0" }}>
-      <span className="tele" style={{ minWidth: 62 }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "baseline", gap: 8,
+                  padding: "3px 0" }}>
+      <span
+        className="tele"
+        style={{ minWidth: 88, whiteSpace: "normal", lineHeight: 1.35 }}
+        title={title}
+      >
+        {label}
+      </span>
       <span
         className="num count-in"
         style={{ fontSize: big ? 17 : 12, color: colour ?? "var(--fg)",

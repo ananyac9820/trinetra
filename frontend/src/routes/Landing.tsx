@@ -18,6 +18,8 @@ import { Link } from "react-router-dom";
 
 import Ambient from "../components/Ambient";
 import ChannelAgeStrip from "../components/ChannelAgeStrip";
+import Graticule from "../components/Graticule";
+import { Reveal, Tilt } from "../components/Reveal";
 import { api } from "../api/client";
 import type { Freshness, ModeInfo, StormSummary } from "../api/types";
 import { useStore } from "../state/store";
@@ -55,6 +57,33 @@ export default function Landing() {
           className="stagger"
           style={{ position: "relative", zIndex: 1, maxWidth: 940 }}
         >
+          {/* The one moving object in the hero: a real orthographic globe with
+              a rotating central meridian, with the basin this system covers
+              drawn where it actually falls on the sphere rather than sketched
+              by eye. It is SVG, not WebGL, because the landing page must not
+              pay for the Explorer's graphics stack before anyone has opened
+              the Explorer. */}
+          <div
+            style={{
+              display: "flex", justifyContent: "center", marginBottom: 6,
+              position: "relative",
+            }}
+          >
+            <div
+              aria-hidden
+              style={{
+                position: "absolute", top: "50%", left: "50%", width: 460,
+                height: 460, transform: "translate(-50%, -50%)",
+                background:
+                  "radial-gradient(closest-side, rgba(79,224,207,0.14), transparent 70%)",
+                filter: "blur(12px)", pointerEvents: "none",
+              }}
+            />
+            <div style={{ position: "relative" }}>
+              <Graticule size={196} period={110} showMeridian={false} />
+            </div>
+          </div>
+
           <div>
             <span className="eyebrow">
               <span
@@ -373,7 +402,7 @@ function Band({ children }: { children: React.ReactNode }) {
   return (
     <section style={{ position: "relative", zIndex: 1 }}>
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "56px 30px 0" }}>
-        {children}
+        <Reveal>{children}</Reveal>
       </div>
     </section>
   );
@@ -416,10 +445,10 @@ function Fact({ k, v, last }: { k: string; v: string; last?: boolean }) {
 
 function Claim({ n, title, body }: { n: string; title: string; body: string }) {
   return (
-    <div
-      className="panel ticked rise"
+    <Tilt
+      className="panel ticked"
       style={{ padding: "16px 18px", display: "flex", flexDirection: "column",
-               gap: 8 }}
+               gap: 8, height: "100%" }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
         <span className="tele" style={{ color: "var(--accent)" }}>{n}</span>
@@ -430,7 +459,7 @@ function Claim({ n, title, body }: { n: string; title: string; body: string }) {
       <p style={{ fontSize: 12, color: "var(--fg-2)", lineHeight: 1.7, margin: 0 }}>
         {body}
       </p>
-    </div>
+    </Tilt>
   );
 }
 
