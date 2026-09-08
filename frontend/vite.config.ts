@@ -14,15 +14,13 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    // MapLibre and deck.gl are large. Splitting them keeps the landing page,
-    // which must load in under two seconds, from paying for the Explorer's
-    // WebGL stack before anyone opens the Explorer.
+    // MapLibre is large. Splitting it keeps the landing page, which must load
+    // in under two seconds, from paying for the Explorer's WebGL stack before
+    // anyone opens the Explorer.
     rollupOptions: {
       output: {
         manualChunks: {
           maplibre: ["maplibre-gl"],
-          deck: ["@deck.gl/core", "@deck.gl/layers", "@deck.gl/mapbox"],
-          charts: ["uplot"],
         },
       },
     },
