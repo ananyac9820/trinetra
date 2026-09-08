@@ -1,0 +1,1008 @@
+{
+  "protocol": {
+    "cross_validation": "leave-one-season-out",
+    "group_key": "storm id (sid)",
+    "n_folds": 36,
+    "bootstrap": {
+      "n_boot": 2000,
+      "resample_unit": "storm",
+      "level": 0.95
+    },
+    "label_source": "IBTrACS v04r01 North Indian Ocean, IMD preferred",
+    "synthetic_inputs_used": false
+  },
+  "label_uncertainty": {
+    "description": "absolute IMD minus JTWC intensity, JTWC converted to a 3-minute averaging period with a 0.93 factor",
+    "n": 5555,
+    "mean_kt": 7.02,
+    "median_kt": 5.01,
+    "p90_kt": 15.6,
+    "note": "An intensity RMSE below this is a leakage bug, not a result."
+  },
+  "forecast": {
+    "vmax_12h": [
+      {
+        "baseline": "persistence",
+        "rmse_ci": {
+          "point": 9.3839,
+          "ci_lo": 8.5656,
+          "ci_hi": 10.1369,
+          "level": 0.95
+        },
+        "n": 10589,
+        "rmse": 9.383948415402177,
+        "mae": 5.408108886580413,
+        "bias": -0.22881118771051717,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 6972,
+            "rmse": 6.341730577988942,
+            "mae": 3.354836249760949,
+            "bias": 0.8841133581946834
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1865,
+            "rmse": 10.912018966021131,
+            "mae": 7.241615728328866,
+            "bias": -0.97124218051832
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 673,
+            "rmse": 14.588296643538653,
+            "mae": 11.025096582466567,
+            "bias": -3.0748736998514112
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 593,
+            "rmse": 14.727707435032933,
+            "mae": 11.409482855536819,
+            "bias": -4.103749297358067
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 18.34988482649905,
+            "mae": 13.681943734015347,
+            "bias": -7.949411764705882
+          }
+        ]
+      },
+      {
+        "baseline": "decay persistence",
+        "rmse_ci": {
+          "point": 9.206,
+          "ci_lo": 8.4143,
+          "ci_hi": 9.9401,
+          "level": 0.95
+        },
+        "n": 10589,
+        "rmse": 9.205982620529905,
+        "mae": 5.533489883291063,
+        "bias": -0.9939029367012804,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 6972,
+            "rmse": 6.168226858730508,
+            "mae": 3.616485793553293,
+            "bias": -0.16243638618485465
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1865,
+            "rmse": 10.628029511715864,
+            "mae": 7.11488937737639,
+            "bias": -1.18032620419882
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 673,
+            "rmse": 14.40109266830829,
+            "mae": 10.900934831801818,
+            "bias": -3.286464567695988
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 593,
+            "rmse": 14.65100647893399,
+            "mae": 11.349939948199843,
+            "bias": -4.193650528806951
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 18.317066809180606,
+            "mae": 13.659944554406513,
+            "bias": -7.971410944314714
+          }
+        ]
+      },
+      {
+        "baseline": "CLIPER",
+        "rmse_ci": {
+          "point": 8.0867,
+          "ci_lo": 7.415,
+          "ci_hi": 8.7119,
+          "level": 0.95
+        },
+        "n": 10589,
+        "rmse": 8.086717657486197,
+        "mae": 5.145277732255585,
+        "bias": 0.007403567637592653,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 6972,
+            "rmse": 5.61323641784644,
+            "mae": 3.5922022373040408,
+            "bias": 1.5661979934771637
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1865,
+            "rmse": 8.760324662782729,
+            "mae": 5.9628578899800235,
+            "bias": -0.05680339139856266
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 673,
+            "rmse": 11.457153826586683,
+            "mae": 8.714267612367735,
+            "bias": -3.3510950501634467
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 593,
+            "rmse": 12.050474127217207,
+            "mae": 9.633188550567871,
+            "bias": -6.469469215981478
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 18.617778193032418,
+            "mae": 15.342861361683827,
+            "bias": -13.64358580226141
+          }
+        ]
+      }
+    ],
+    "vmax_24h": [
+      {
+        "baseline": "persistence",
+        "rmse_ci": {
+          "point": 15.3547,
+          "ci_lo": 13.8581,
+          "ci_hi": 16.727,
+          "level": 0.95
+        },
+        "n": 9263,
+        "rmse": 15.354710352050992,
+        "mae": 9.700864550721509,
+        "bias": -1.0915353197308286,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 5700,
+            "rmse": 11.017586926931648,
+            "mae": 6.079655847953216,
+            "bias": 2.4730944444444445
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1820,
+            "rmse": 15.418010358233433,
+            "mae": 11.125461538461538,
+            "bias": -3.1408901098901096
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 654,
+            "rmse": 21.386070947722953,
+            "mae": 17.96611620795107,
+            "bias": -8.115626911314985
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 593,
+            "rmse": 23.830424433228018,
+            "mae": 20.071686340640806,
+            "bias": -10.579274873524453
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 31.517086860850153,
+            "mae": 26.05918158567775,
+            "bias": -20.52485933503836
+          }
+        ]
+      },
+      {
+        "baseline": "decay persistence",
+        "rmse_ci": {
+          "point": 15.2255,
+          "ci_lo": 13.777,
+          "ci_hi": 16.5672,
+          "level": 0.95
+        },
+        "n": 9263,
+        "rmse": 15.225525623072418,
+        "mae": 9.808278179904436,
+        "bias": -1.8423297708963753,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 5700,
+            "rmse": 10.80877784276962,
+            "mae": 6.291750883782165,
+            "bias": 1.3491020691382118
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1820,
+            "rmse": 15.337742917732593,
+            "mae": 11.09493918699217,
+            "bias": -3.2708991173665702
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 654,
+            "rmse": 21.269291145637037,
+            "mae": 17.926476371651045,
+            "bias": -8.256490782054527
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 593,
+            "rmse": 23.821755011088015,
+            "mae": 20.062401594155872,
+            "bias": -10.588559620009386
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 31.517086860850153,
+            "mae": 26.05918158567775,
+            "bias": -20.52485933503836
+          }
+        ]
+      },
+      {
+        "baseline": "CLIPER",
+        "rmse_ci": {
+          "point": 12.6233,
+          "ci_lo": 11.5874,
+          "ci_hi": 13.5941,
+          "level": 0.95
+        },
+        "n": 9263,
+        "rmse": 12.62332072035733,
+        "mae": 8.576756511526446,
+        "bias": 0.009760945790833366,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 5700,
+            "rmse": 9.351290442312708,
+            "mae": 6.36099023530756,
+            "bias": 4.107162152535038
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1820,
+            "rmse": 10.513648325703281,
+            "mae": 7.5771049219698465,
+            "bias": -0.1122303926636553
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 654,
+            "rmse": 14.14320046252745,
+            "mae": 11.758440484961248,
+            "bias": -7.149629947201913
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 593,
+            "rmse": 18.429749253641987,
+            "mae": 15.442101384468314,
+            "bias": -13.289631597902352
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 32.89475698806057,
+            "mae": 29.62360184754485,
+            "bias": -29.29978420062502
+          }
+        ]
+      }
+    ],
+    "vmax_48h": [
+      {
+        "baseline": "persistence",
+        "rmse_ci": {
+          "point": 23.9005,
+          "ci_lo": 21.2008,
+          "ci_hi": 26.4723,
+          "level": 0.95
+        },
+        "n": 6906,
+        "rmse": 23.900520984203656,
+        "mae": 16.280005068056763,
+        "bias": -4.219563423110339,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 3778,
+            "rmse": 16.291347699735706,
+            "mae": 9.524366066701958,
+            "bias": 5.372132080465855
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1448,
+            "rmse": 20.336953864145332,
+            "mae": 15.344178176795582,
+            "bias": -5.485918508287293
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 611,
+            "rmse": 28.70725376092725,
+            "mae": 26.162962356792143,
+            "bias": -16.624075286415714
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 588,
+            "rmse": 34.87919494191227,
+            "mae": 31.281156462585034,
+            "bias": -25.256938775510203
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 52.82365174215012,
+            "mae": 47.840946291560094,
+            "bias": -45.083913043478255
+          }
+        ]
+      },
+      {
+        "baseline": "decay persistence",
+        "rmse_ci": {
+          "point": 23.8819,
+          "ci_lo": 21.1678,
+          "ci_hi": 26.4571,
+          "level": 0.95
+        },
+        "n": 6906,
+        "rmse": 23.881910731252635,
+        "mae": 16.30884905716199,
+        "bias": -4.561743861482313,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 3778,
+            "rmse": 16.227329475311265,
+            "mae": 9.563919767535442,
+            "bias": 4.815211695186796
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1448,
+            "rmse": 20.366054988707063,
+            "mae": 15.401606252971238,
+            "bias": -5.576428184120437
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 611,
+            "rmse": 28.74942190402353,
+            "mae": 26.20869732040173,
+            "bias": -16.673574570810892
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 588,
+            "rmse": 34.88710200946729,
+            "mae": 31.28773405241653,
+            "bias": -25.263516365341697
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 52.82365174215012,
+            "mae": 47.840946291560094,
+            "bias": -45.083913043478255
+          }
+        ]
+      },
+      {
+        "baseline": "CLIPER",
+        "rmse_ci": {
+          "point": 18.4604,
+          "ci_lo": 16.6783,
+          "ci_hi": 20.2084,
+          "level": 0.95
+        },
+        "n": 6906,
+        "rmse": 18.460423663586006,
+        "mae": 13.403405008697892,
+        "bias": 0.00826764994972259,
+        "by_intensity": [
+          {
+            "bin": "17-33 kt (D, DD)",
+            "n": 3778,
+            "rmse": 13.533782286432581,
+            "mae": 10.588441886238124,
+            "bias": 9.205252246675263
+          },
+          {
+            "bin": "34-47 kt (CS)",
+            "n": 1448,
+            "rmse": 10.365339705036885,
+            "mae": 7.870500498323066,
+            "bias": 1.5382752915759013
+          },
+          {
+            "bin": "48-63 kt (SCS)",
+            "n": 611,
+            "rmse": 16.04935189666599,
+            "mae": 13.662059155049214,
+            "bias": -11.055382294022102
+          },
+          {
+            "bin": "64-89 kt (VSCS)",
+            "n": 588,
+            "rmse": 26.237697890982805,
+            "mae": 23.509981063473845,
+            "bias": -23.047067874014946
+          },
+          {
+            "bin": "90+ kt (ESCS, SuCS)",
+            "n": 391,
+            "rmse": 48.46884888438175,
+            "mae": 45.513816913682504,
+            "bias": -45.51320537416764
+          }
+        ]
+      }
+    ],
+    "ri_24h": [
+      {
+        "baseline": "climatology",
+        "bss_ci": {
+          "point": -0.0021,
+          "ci_lo": -0.006,
+          "ci_hi": -0.0017,
+          "level": 0.95
+        },
+        "auc_ci": {
+          "point": 0.238,
+          "ci_lo": 0.1941,
+          "ci_hi": 0.2922,
+          "level": 0.95
+        },
+        "n": 9263,
+        "base_rate": 0.03465399978408723,
+        "mean_forecast": 0.03468027330911765,
+        "brier": 0.03352420343205557,
+        "brier_skill_score": -0.0021254636738397004,
+        "roc_auc": 0.2380099582564272,
+        "reliability": [
+          {
+            "bin_lo": 0.0,
+            "bin_hi": 0.1,
+            "n": 9263,
+            "mean_forecast": 0.0347,
+            "observed_frequency": 0.0347
+          }
+        ],
+        "contingency": {
+          "threshold": 0.45,
+          "hits": 0,
+          "misses": 321,
+          "false_alarms": 0,
+          "correct_negatives": 8942,
+          "pod": 0.0,
+          "far": NaN,
+          "csi": 0.0
+        },
+        "cost_loss": [
+          {
+            "cost_loss_ratio": 0.05,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.1,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.15,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.2,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.25,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.3,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.35,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.4,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.45,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.5,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.55,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.6,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.65,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.7,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.75,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.8,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.85,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.9,
+            "value": 0.0
+          },
+          {
+            "cost_loss_ratio": 0.95,
+            "value": 0.0
+          }
+        ]
+      },
+      {
+        "baseline": "logistic, uncalibrated",
+        "bss_ci": {
+          "point": -3.7744,
+          "ci_lo": -5.4801,
+          "ci_hi": -2.7004,
+          "level": 0.95
+        },
+        "auc_ci": {
+          "point": 0.8314,
+          "ci_lo": 0.7853,
+          "ci_hi": 0.8696,
+          "level": 0.95
+        },
+        "n": 9263,
+        "base_rate": 0.03465399978408723,
+        "mean_forecast": 0.3299441680866036,
+        "brier": 0.1597177610361891,
+        "brier_skill_score": -3.774378477321048,
+        "roc_auc": 0.8313701799969482,
+        "reliability": [
+          {
+            "bin_lo": 0.0,
+            "bin_hi": 0.1,
+            "n": 1688,
+            "mean_forecast": 0.0572,
+            "observed_frequency": 0.0036
+          },
+          {
+            "bin_lo": 0.1,
+            "bin_hi": 0.2,
+            "n": 2103,
+            "mean_forecast": 0.1472,
+            "observed_frequency": 0.0076
+          },
+          {
+            "bin_lo": 0.2,
+            "bin_hi": 0.3,
+            "n": 1332,
+            "mean_forecast": 0.2468,
+            "observed_frequency": 0.0135
+          },
+          {
+            "bin_lo": 0.3,
+            "bin_hi": 0.4,
+            "n": 1094,
+            "mean_forecast": 0.3473,
+            "observed_frequency": 0.0174
+          },
+          {
+            "bin_lo": 0.4,
+            "bin_hi": 0.5,
+            "n": 791,
+            "mean_forecast": 0.4493,
+            "observed_frequency": 0.0228
+          },
+          {
+            "bin_lo": 0.5,
+            "bin_hi": 0.6,
+            "n": 653,
+            "mean_forecast": 0.5476,
+            "observed_frequency": 0.0322
+          },
+          {
+            "bin_lo": 0.6,
+            "bin_hi": 0.7,
+            "n": 501,
+            "mean_forecast": 0.6491,
+            "observed_frequency": 0.0778
+          },
+          {
+            "bin_lo": 0.7,
+            "bin_hi": 0.8,
+            "n": 505,
+            "mean_forecast": 0.7512,
+            "observed_frequency": 0.1307
+          },
+          {
+            "bin_lo": 0.8,
+            "bin_hi": 0.9,
+            "n": 381,
+            "mean_forecast": 0.8476,
+            "observed_frequency": 0.1759
+          },
+          {
+            "bin_lo": 0.9,
+            "bin_hi": 1.0,
+            "n": 215,
+            "mean_forecast": 0.9351,
+            "observed_frequency": 0.2372
+          }
+        ],
+        "contingency": {
+          "threshold": 0.45,
+          "hits": 253,
+          "misses": 68,
+          "false_alarms": 2401,
+          "correct_negatives": 6541,
+          "pod": 0.7882,
+          "far": 0.9047,
+          "csi": 0.0929
+        },
+        "cost_loss": [
+          {
+            "cost_loss_ratio": 0.05,
+            "value": 0.4686
+          },
+          {
+            "cost_loss_ratio": 0.1,
+            "value": 0.2593
+          },
+          {
+            "cost_loss_ratio": 0.15,
+            "value": 0.1171
+          },
+          {
+            "cost_loss_ratio": 0.2,
+            "value": 0.0467
+          },
+          {
+            "cost_loss_ratio": 0.25,
+            "value": 0.0218
+          },
+          {
+            "cost_loss_ratio": 0.3,
+            "value": 0.004
+          },
+          {
+            "cost_loss_ratio": 0.35,
+            "value": -0.0165
+          },
+          {
+            "cost_loss_ratio": 0.4,
+            "value": -0.0249
+          },
+          {
+            "cost_loss_ratio": 0.45,
+            "value": -0.0306
+          },
+          {
+            "cost_loss_ratio": 0.5,
+            "value": -0.0374
+          },
+          {
+            "cost_loss_ratio": 0.55,
+            "value": -0.0457
+          },
+          {
+            "cost_loss_ratio": 0.6,
+            "value": -0.0561
+          },
+          {
+            "cost_loss_ratio": 0.65,
+            "value": -0.0694
+          },
+          {
+            "cost_loss_ratio": 0.7,
+            "value": -0.0872
+          },
+          {
+            "cost_loss_ratio": 0.75,
+            "value": -0.1121
+          },
+          {
+            "cost_loss_ratio": 0.8,
+            "value": -0.1495
+          },
+          {
+            "cost_loss_ratio": 0.85,
+            "value": -0.2118
+          },
+          {
+            "cost_loss_ratio": 0.9,
+            "value": -0.3364
+          },
+          {
+            "cost_loss_ratio": 0.95,
+            "value": -0.7103
+          }
+        ]
+      },
+      {
+        "baseline": "logistic + isotonic calibration",
+        "bss_ci": {
+          "point": 0.0507,
+          "ci_lo": -0.0326,
+          "ci_hi": 0.1106,
+          "level": 0.95
+        },
+        "auc_ci": {
+          "point": 0.8194,
+          "ci_lo": 0.7716,
+          "ci_hi": 0.8579,
+          "level": 0.95
+        },
+        "n": 9263,
+        "base_rate": 0.03465399978408723,
+        "mean_forecast": 0.03418258061989997,
+        "brier": 0.03175766815315444,
+        "brier_skill_score": 0.05068086143550643,
+        "roc_auc": 0.8194438928337762,
+        "reliability": [
+          {
+            "bin_lo": 0.0,
+            "bin_hi": 0.1,
+            "n": 8352,
+            "mean_forecast": 0.0157,
+            "observed_frequency": 0.0178
+          },
+          {
+            "bin_lo": 0.1,
+            "bin_hi": 0.2,
+            "n": 548,
+            "mean_forecast": 0.1379,
+            "observed_frequency": 0.1715
+          },
+          {
+            "bin_lo": 0.2,
+            "bin_hi": 0.3,
+            "n": 257,
+            "mean_forecast": 0.2384,
+            "observed_frequency": 0.2296
+          },
+          {
+            "bin_lo": 0.3,
+            "bin_hi": 0.4,
+            "n": 44,
+            "mean_forecast": 0.338,
+            "observed_frequency": 0.0227
+          },
+          {
+            "bin_lo": 0.4,
+            "bin_hi": 0.5,
+            "n": 36,
+            "mean_forecast": 0.461,
+            "observed_frequency": 0.3889
+          },
+          {
+            "bin_lo": 0.5,
+            "bin_hi": 0.6,
+            "n": 17,
+            "mean_forecast": 0.5551,
+            "observed_frequency": 0.1765
+          },
+          {
+            "bin_lo": 0.7,
+            "bin_hi": 0.8,
+            "n": 4,
+            "mean_forecast": 0.75,
+            "observed_frequency": 0.0
+          },
+          {
+            "bin_lo": 0.9,
+            "bin_hi": 1.0,
+            "n": 5,
+            "mean_forecast": 1.0,
+            "observed_frequency": 0.2
+          }
+        ],
+        "contingency": {
+          "threshold": 0.45,
+          "hits": 18,
+          "misses": 303,
+          "false_alarms": 37,
+          "correct_negatives": 8905,
+          "pod": 0.0561,
+          "far": 0.6727,
+          "csi": 0.0503
+        },
+        "cost_loss": [
+          {
+            "cost_loss_ratio": 0.05,
+            "value": 0.4332
+          },
+          {
+            "cost_loss_ratio": 0.1,
+            "value": 0.28
+          },
+          {
+            "cost_loss_ratio": 0.15,
+            "value": 0.1296
+          },
+          {
+            "cost_loss_ratio": 0.2,
+            "value": 0.0327
+          },
+          {
+            "cost_loss_ratio": 0.25,
+            "value": 0.0177
+          },
+          {
+            "cost_loss_ratio": 0.3,
+            "value": 0.0067
+          },
+          {
+            "cost_loss_ratio": 0.35,
+            "value": -0.0036
+          },
+          {
+            "cost_loss_ratio": 0.4,
+            "value": -0.0052
+          },
+          {
+            "cost_loss_ratio": 0.45,
+            "value": -0.0071
+          },
+          {
+            "cost_loss_ratio": 0.5,
+            "value": -0.0093
+          },
+          {
+            "cost_loss_ratio": 0.55,
+            "value": -0.0121
+          },
+          {
+            "cost_loss_ratio": 0.6,
+            "value": -0.0156
+          },
+          {
+            "cost_loss_ratio": 0.65,
+            "value": -0.02
+          },
+          {
+            "cost_loss_ratio": 0.7,
+            "value": -0.026
+          },
+          {
+            "cost_loss_ratio": 0.75,
+            "value": -0.0343
+          },
+          {
+            "cost_loss_ratio": 0.8,
+            "value": -0.0467
+          },
+          {
+            "cost_loss_ratio": 0.85,
+            "value": -0.0675
+          },
+          {
+            "cost_loss_ratio": 0.9,
+            "value": -0.109
+          },
+          {
+            "cost_loss_ratio": 0.95,
+            "value": -0.2336
+          }
+        ]
+      }
+    ],
+    "ri_24h_note": "Class weighting is what makes the model find events at a 3.5 percent base rate, and it is also what destroys the calibration. AUC measures the ranking and rises; the Brier Skill Score measures the probabilities and collapses. A monotone isotonic map fitted on held-out storms repairs the second without changing the first, which is why both are reported for all three rows.",
+    "climatology_auc_note": "The climatology row has an AUC below 0.5, which looks like a broken metric and is not. Under leave-one-season-out the climatology forecast for a season is the base rate of every other season, so removing a high-RI season from the mean lowers the forecast for exactly the season that had the most events. Measured correlation between a season's actual RI rate and its own leave-one-season-out climatology prediction is -0.94. A genuinely constant forecast scores exactly 0.5, which the test suite asserts. Climatology is the Brier Skill Score reference and its AUC carries no information."
+  },
+  "analysis": {
+    "imd_ci_regression": {
+      "baseline": "IMD Dvorak CI number, quadratic regression",
+      "rmse_ci": {
+        "point": 7.2765,
+        "ci_lo": 6.2429,
+        "ci_hi": 8.429,
+        "level": 0.95
+      },
+      "caveat": "CI and the best-track intensity label come from the same Dvorak analysis, so this measures the wind-pressure table rather than an independent method. The specified baseline is the CIMSS ADT archive, which was not pulled in this build.",
+      "n": 6407,
+      "rmse": 7.276454451426501,
+      "mae": 4.168637176485335,
+      "bias": 0.015770672594746737,
+      "by_intensity": [
+        {
+          "bin": "17-33 kt (D, DD)",
+          "n": 3487,
+          "rmse": 3.665405404647403,
+          "mae": 3.0687293740543864,
+          "bias": 2.8144772242390514
+        },
+        {
+          "bin": "34-47 kt (CS)",
+          "n": 1426,
+          "rmse": 4.371610822185383,
+          "mae": 3.029980308696313,
+          "bias": -1.7602708398243156
+        },
+        {
+          "bin": "48-63 kt (SCS)",
+          "n": 551,
+          "rmse": 10.928723469578236,
+          "mae": 7.391933972713178,
+          "bias": -7.19084160816632
+        },
+        {
+          "bin": "64-89 kt (VSCS)",
+          "n": 544,
+          "rmse": 15.034763263825726,
+          "mae": 8.129034498979406,
+          "bias": -7.972896743808897
+        },
+        {
+          "bin": "90+ kt (ESCS, SuCS)",
+          "n": 355,
+          "rmse": 13.931885925720598,
+          "mae": 7.38523266386036,
+          "bias": 1.482752762201002
+        }
+      ]
+    }
+  },
+  "independent_truth_subset": {
+    "status": "absent",
+    "reason": "NOAA SAR TC Wind was not pulled in this build. No non-Dvorak intensity truth exists here, so no second RMSE is reported.",
+    "n_cases": 0
+  }
+}

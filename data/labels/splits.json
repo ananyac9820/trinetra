@@ -1,0 +1,333 @@
+{
+  "n_fixes": 11993,
+  "n_storms": 357,
+  "seasons": [
+    1990,
+    1991,
+    1992,
+    1993,
+    1994,
+    1995,
+    1996,
+    1997,
+    1998,
+    1999,
+    2000,
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "group_key": "sid",
+  "folds": [
+    {
+      "name": "season_1990",
+      "train_fixes": 11673,
+      "test_fixes": 320,
+      "train_storms": 345,
+      "test_storms": 12,
+      "season": 1990
+    },
+    {
+      "name": "season_1991",
+      "train_fixes": 11676,
+      "test_fixes": 317,
+      "train_storms": 348,
+      "test_storms": 9,
+      "season": 1991
+    },
+    {
+      "name": "season_1992",
+      "train_fixes": 11374,
+      "test_fixes": 619,
+      "train_storms": 342,
+      "test_storms": 15,
+      "season": 1992
+    },
+    {
+      "name": "season_1993",
+      "train_fixes": 11842,
+      "test_fixes": 151,
+      "train_storms": 352,
+      "test_storms": 5,
+      "season": 1993
+    },
+    {
+      "name": "season_1994",
+      "train_fixes": 11760,
+      "test_fixes": 233,
+      "train_storms": 351,
+      "test_storms": 6,
+      "season": 1994
+    },
+    {
+      "name": "season_1995",
+      "train_fixes": 11728,
+      "test_fixes": 265,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 1995
+    },
+    {
+      "name": "season_1996",
+      "train_fixes": 11406,
+      "test_fixes": 587,
+      "train_storms": 346,
+      "test_storms": 11,
+      "season": 1996
+    },
+    {
+      "name": "season_1997",
+      "train_fixes": 11691,
+      "test_fixes": 302,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 1997
+    },
+    {
+      "name": "season_1998",
+      "train_fixes": 11550,
+      "test_fixes": 443,
+      "train_storms": 344,
+      "test_storms": 13,
+      "season": 1998
+    },
+    {
+      "name": "season_1999",
+      "train_fixes": 11684,
+      "test_fixes": 309,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 1999
+    },
+    {
+      "name": "season_2000",
+      "train_fixes": 11769,
+      "test_fixes": 224,
+      "train_storms": 351,
+      "test_storms": 6,
+      "season": 2000
+    },
+    {
+      "name": "season_2001",
+      "train_fixes": 11749,
+      "test_fixes": 244,
+      "train_storms": 350,
+      "test_storms": 7,
+      "season": 2001
+    },
+    {
+      "name": "season_2002",
+      "train_fixes": 11806,
+      "test_fixes": 187,
+      "train_storms": 351,
+      "test_storms": 6,
+      "season": 2002
+    },
+    {
+      "name": "season_2003",
+      "train_fixes": 11719,
+      "test_fixes": 274,
+      "train_storms": 350,
+      "test_storms": 7,
+      "season": 2003
+    },
+    {
+      "name": "season_2004",
+      "train_fixes": 11602,
+      "test_fixes": 391,
+      "train_storms": 346,
+      "test_storms": 11,
+      "season": 2004
+    },
+    {
+      "name": "season_2005",
+      "train_fixes": 11520,
+      "test_fixes": 473,
+      "train_storms": 341,
+      "test_storms": 16,
+      "season": 2005
+    },
+    {
+      "name": "season_2006",
+      "train_fixes": 11615,
+      "test_fixes": 378,
+      "train_storms": 344,
+      "test_storms": 13,
+      "season": 2006
+    },
+    {
+      "name": "season_2007",
+      "train_fixes": 11768,
+      "test_fixes": 225,
+      "train_storms": 351,
+      "test_storms": 6,
+      "season": 2007
+    },
+    {
+      "name": "season_2008",
+      "train_fixes": 11694,
+      "test_fixes": 299,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 2008
+    },
+    {
+      "name": "season_2009",
+      "train_fixes": 11821,
+      "test_fixes": 172,
+      "train_storms": 349,
+      "test_storms": 8,
+      "season": 2009
+    },
+    {
+      "name": "season_2010",
+      "train_fixes": 11717,
+      "test_fixes": 276,
+      "train_storms": 349,
+      "test_storms": 8,
+      "season": 2010
+    },
+    {
+      "name": "season_2011",
+      "train_fixes": 11708,
+      "test_fixes": 285,
+      "train_storms": 348,
+      "test_storms": 9,
+      "season": 2011
+    },
+    {
+      "name": "season_2012",
+      "train_fixes": 11833,
+      "test_fixes": 160,
+      "train_storms": 352,
+      "test_storms": 5,
+      "season": 2012
+    },
+    {
+      "name": "season_2013",
+      "train_fixes": 11488,
+      "test_fixes": 505,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 2013
+    },
+    {
+      "name": "season_2014",
+      "train_fixes": 11667,
+      "test_fixes": 326,
+      "train_storms": 349,
+      "test_storms": 8,
+      "season": 2014
+    },
+    {
+      "name": "season_2015",
+      "train_fixes": 11610,
+      "test_fixes": 383,
+      "train_storms": 345,
+      "test_storms": 12,
+      "season": 2015
+    },
+    {
+      "name": "season_2016",
+      "train_fixes": 11643,
+      "test_fixes": 350,
+      "train_storms": 349,
+      "test_storms": 8,
+      "season": 2016
+    },
+    {
+      "name": "season_2017",
+      "train_fixes": 11747,
+      "test_fixes": 246,
+      "train_storms": 345,
+      "test_storms": 12,
+      "season": 2017
+    },
+    {
+      "name": "season_2018",
+      "train_fixes": 11518,
+      "test_fixes": 475,
+      "train_storms": 342,
+      "test_storms": 15,
+      "season": 2018
+    },
+    {
+      "name": "season_2019",
+      "train_fixes": 11408,
+      "test_fixes": 585,
+      "train_storms": 346,
+      "test_storms": 11,
+      "season": 2019
+    },
+    {
+      "name": "season_2020",
+      "train_fixes": 11694,
+      "test_fixes": 299,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 2020
+    },
+    {
+      "name": "season_2021",
+      "train_fixes": 11702,
+      "test_fixes": 291,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 2021
+    },
+    {
+      "name": "season_2022",
+      "train_fixes": 11590,
+      "test_fixes": 403,
+      "train_storms": 342,
+      "test_storms": 15,
+      "season": 2022
+    },
+    {
+      "name": "season_2023",
+      "train_fixes": 11590,
+      "test_fixes": 403,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 2023
+    },
+    {
+      "name": "season_2024",
+      "train_fixes": 11601,
+      "test_fixes": 392,
+      "train_storms": 344,
+      "test_storms": 13,
+      "season": 2024
+    },
+    {
+      "name": "season_2025",
+      "train_fixes": 11792,
+      "test_fixes": 201,
+      "train_storms": 347,
+      "test_storms": 10,
+      "season": 2025
+    }
+  ]
+}
