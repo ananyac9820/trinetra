@@ -62,6 +62,17 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
   // track and no raster layers at all.
   const [ready, setReady] = useState(false);
 
+  /* The map's click handler is registered once, at mount, and a listener
+     registered once captures the props from that render forever. `onProbe`
+     closes over the selected storm and the scrubber time, both of which are
+     null on the first render, so every click for the rest of the session
+     probed with no storm and no time — the API then fell back to its own
+     defaults and answered about a different storm at a different date, which
+     read as "outside storm domain" on a point plainly inside it. The
+     indirection through a ref is what keeps the listener current. */
+  const onProbeRef = useRef(onProbe);
+  onProbeRef.current = onProbe;
+
   const s = useStore();
   const ordered = useStore((z) => z.visibleOrdered)();
   const derivedActive = ordered.some((l) => l.class === "D");
@@ -116,7 +127,7 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
     m.on("rotateend", commit);
     m.on("pitchend", commit);
 
-    m.on("click", (e) => onProbe(e.lngLat.lat, e.lngLat.lng));
+    m.on("click", (e) => onProbeRef.current(e.lngLat.lat, e.lngLat.lng));
     m.getCanvas().style.cursor = "crosshair";
 
     return () => {
