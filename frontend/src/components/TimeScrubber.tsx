@@ -197,7 +197,7 @@ export default function TimeScrubber({ track }: Props) {
         <button
           className={follow ? "active" : undefined}
           onClick={() => set({ follow: !follow })}
-          title="F: lock the viewport to the moving centre. Off by default; disorienting when on."
+          title="F: lock the viewport to the moving centre. On by default, because the imagery is a storm-centred cube and an unlocked viewport loses it within a few steps."
           style={{ padding: "4px 12px", fontSize: 11, borderRadius: "var(--r-pill)" }}
         >
           Follow

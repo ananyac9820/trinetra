@@ -69,7 +69,15 @@ export const DEFAULT_VIEW: ViewState = {
   zoom: 4.1,
   bearing: 0,
   pitch: 0,
-  follow: false,
+  /* Follow is on by default, which reverses an earlier decision.
+     The argument against it — locking the viewport to a moving centre is
+     disorienting — holds for a basin-wide map where the geography is the
+     context. It does not hold here: the imagery is a 1000 km storm-centred
+     cube, so scrubbing without follow walks the only data on the map off the
+     screen within a few steps and leaves the viewer looking at an empty
+     ocean. The control is one click away for anyone who wants the fixed
+     frame. */
+  follow: true,
   speed: 1,
   playing: false,
   probe: null,
@@ -246,7 +254,11 @@ export const useStore = create<Store>((setState, getState) => ({
     p.set("z", s.zoom.toFixed(2));
     if (Math.abs(s.bearing) > 0.5) p.set("b", s.bearing.toFixed(1));
     if (Math.abs(s.pitch) > 0.5) p.set("p", s.pitch.toFixed(1));
-    if (s.follow) p.set("follow", "1");
+    // Serialised whenever it differs from the default, in either direction.
+    // Writing it only when true was correct while the default was false; with
+    // the default on, a user who turned follow off would get it back on the
+    // next reload, and the permalink would no longer reproduce the view.
+    if (s.follow !== DEFAULT_VIEW.follow) p.set("follow", s.follow ? "1" : "0");
     if (s.speed !== 1) p.set("speed", String(s.speed));
     if (s.probe) {
       p.set("plat", s.probe.lat.toFixed(4));
