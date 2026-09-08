@@ -204,32 +204,6 @@ it would on real granules. Every synthetic granule carries
 The acquisition clients for all the real sources are written and working. They
 need credentials, not code. `docs/RUNBOOK.md` has the commands.
 
-## Honesty register
-
-Say these before a judge finds them.
-
-Primary labels are Dvorak-derived, so the headline number measures agreement with
-a subjective human estimate. The independent-truth subset built from SAR-derived
-Vmax is the second number, and it is the one that matters.
-
-Best-track is a post-season reanalysis with hindsight the real-time system never
-had, which makes any best-track evaluation an optimistic bound on operational
-performance.
-
-The basin produces a handful of severe systems per year. Four historical August
-Arabian Sea cyclones is a case-study basis and not a statistical one. Asna is an
-analogue, not a training set.
-
-Known failure modes: pinhole eyes, extratropical transition, post-landfall decay,
-sheared weak systems, timesteps with no microwave, and the moment of land-sea
-transition itself, where the regime classifier is least confident and it matters
-most. The system abstains there rather than guessing.
-
-TRINETRA does not attempt medium-range track forecasting, storm surge, or wind
-radii as a headline claim, and it does not claim to beat WeatherNext-class models
-at what those models are good at.
-
-Cyclone warnings are a statutory IMD function. This is decision support.
 
 ## Licence and attribution
 
