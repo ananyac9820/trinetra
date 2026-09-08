@@ -348,6 +348,14 @@ export interface DistrictRisk {
   disclaimer: string;
 }
 
+export interface ImdBand {
+  code: string;
+  label: string;
+  lower_kt: number;
+  upper_kt: number | null;
+  averaging: string;
+}
+
 export interface ModeInfo {
   mode: Mode;
   server_clock: string;
@@ -359,6 +367,8 @@ export interface ModeInfo {
   capabilities: Record<string, unknown>;
   warnings: string[];
   disclaimer: string;
+  /** The seven IMD bands, served so the client never keeps its own copy. */
+  imd_scale: ImdBand[];
 }
 
 /* ---------------------------------------------------------------- hazard

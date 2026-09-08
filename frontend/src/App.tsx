@@ -56,6 +56,7 @@ export function Mark({ size = 18 }: { size?: number }) {
 export default function App() {
   const setManifest = useStore((s) => s.setManifest);
   const set = useStore((s) => s.set);
+  const setImdScale = useStore((s) => s.setImdScale);
   const location = useLocation();
 
   /* The manifest is fetched once and drives every provenance visual in the
@@ -63,9 +64,13 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     api.layers().then((m) => { if (alive) setManifest(m); }).catch(() => {});
-    api.mode().then((m) => { if (alive) set({ mode: m.mode }); }).catch(() => {});
+    api.mode().then((m) => {
+      if (!alive) return;
+      set({ mode: m.mode });
+      if (m.imd_scale?.length) setImdScale(m.imd_scale);
+    }).catch(() => {});
     return () => { alive = false; };
-  }, [setManifest, set]);
+  }, [setManifest, set, setImdScale]);
 
   const isExplorer = location.pathname.startsWith("/explorer");
   const isLanding = location.pathname === "/";

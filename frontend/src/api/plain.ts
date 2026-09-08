@@ -127,12 +127,15 @@ export const CLASS_PLAIN: Record<string, string> = {
   D: "TRINETRA's own output. Always shown with its uncertainty.",
 };
 
-export const CATEGORY_PLAIN: Record<string, string> = {
-  D: "Depression — winds up to 33 kt",
-  DD: "Deep depression — 34 to 47 kt",
-  CS: "Cyclonic storm — 48 to 63 kt",
-  SCS: "Severe cyclonic storm — 64 to 89 kt",
-  VSCS: "Very severe cyclonic storm — 90 to 119 kt",
-  ESCS: "Extremely severe cyclonic storm — 120 to 165 kt",
-  SuCS: "Super cyclonic storm — above 166 kt",
-};
+/* The IMD intensity bands are deliberately NOT listed here.
+ *
+ * They used to be, as a hand-written map from category code to a gloss with a
+ * wind range, and every single row was shifted by one band: "Cyclonic storm"
+ * carried 48 to 63 kt, which is Severe Cyclonic Storm, and so on up the scale.
+ * A correct category name beside a wrong wind range is worse than no range at
+ * all, and it sat on screen next to a 96 kt storm labelled ESCS.
+ *
+ * The bands now come from `/api/mode`, generated from the same `IMD_SCALE`
+ * definition the best-track labels were built from, and are read through
+ * `useStore().categoryGloss(code)`. There is one copy and it is the one that
+ * defines the labels. */

@@ -18,7 +18,7 @@
  */
 
 import { create } from "zustand";
-import type { Layer, Manifest, Mode } from "../api/types";
+import type { ImdBand, Layer, Manifest, Mode } from "../api/types";
 
 export interface ViewState {
   mode: Mode;
@@ -63,8 +63,14 @@ interface Store extends ViewState {
   manifest: Manifest | null;
   layersById: Record<string, Layer>;
   blocked: { layerId: string; reason: string } | null;
+  /** The IMD scale as the backend defines it. Held here rather than written
+   *  out in the client, because a second hand-maintained copy of these bands
+   *  was wrong in every row. */
+  imdScale: ImdBand[];
 
   setManifest: (m: Manifest) => void;
+  setImdScale: (bands: ImdBand[]) => void;
+  categoryGloss: (code: string | null | undefined) => string | null;
   set: (patch: Partial<ViewState>) => void;
   toggleLayer: (id: string) => void;
   setOpacity: (id: string, v: number) => void;
@@ -110,6 +116,7 @@ export const useStore = create<Store>((setState, getState) => ({
   manifest: null,
   layersById: {},
   blocked: null,
+  imdScale: [],
 
   setManifest: (m) => {
     const byId: Record<string, Layer> = {};
@@ -132,6 +139,21 @@ export const useStore = create<Store>((setState, getState) => ({
   },
 
   set: (patch) => setState(patch),
+
+  setImdScale: (bands) => setState({ imdScale: bands }),
+
+  /** "Cyclonic storm, 34 to 47 kt", built from the served bands.
+   *  Returns null when the scale has not arrived, so a caller renders nothing
+   *  rather than a guess. */
+  categoryGloss: (code) => {
+    if (!code) return null;
+    const band = getState().imdScale.find((b) => b.code === code);
+    if (!band) return null;
+    const range = band.upper_kt === null
+      ? `${band.lower_kt.toFixed(0)} kt and above`
+      : `${band.lower_kt.toFixed(0)} to ${band.upper_kt.toFixed(0)} kt`;
+    return `${band.label}, ${range}`;
+  },
 
   toggleLayer: (id) => {
     const s = getState();

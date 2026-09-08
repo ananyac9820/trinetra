@@ -13,7 +13,8 @@ import { Link } from "react-router-dom";
 
 import WhyPanel from "./WhyPanel";
 import { formatAge, formatUtc, num, REGIME_LABEL, REGIME_COLOR } from "../api/client";
-import { CATEGORY_PLAIN, REGIME_PLAIN } from "../api/plain";
+import { REGIME_PLAIN } from "../api/plain";
+import { useStore } from "../state/store";
 import type { StormState } from "../api/types";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -33,6 +34,8 @@ interface Props {
 }
 
 export default function SidePanel({ state, loading }: Props) {
+  // The IMD bands come from the API; see the note in api/plain.ts.
+  const categoryGloss = useStore((z) => z.categoryGloss);
   if (!state) {
     return (
       <div style={{ padding: 16 }}>
@@ -101,10 +104,10 @@ export default function SidePanel({ state, loading }: Props) {
             {CATEGORY_LABEL[c.observed_category] ?? c.observed_category}
           </div>
         )}
-        {c.imd_category && CATEGORY_PLAIN[c.imd_category] && (
+        {categoryGloss(c.imd_category) && (
           <div style={{ fontSize: 10.5, color: "var(--fg-3)", lineHeight: 1.5,
                         marginTop: 3 }}>
-            {CATEGORY_PLAIN[c.imd_category]}
+            {categoryGloss(c.imd_category)}
           </div>
         )}
         <div className="tele" style={{ marginTop: 4 }}>

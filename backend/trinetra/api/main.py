@@ -123,7 +123,34 @@ def get_mode():
         "capabilities": C.CAPS.as_dict(),
         "warnings": STATE.warnings,
         "disclaimer": formats.DISCLAIMER,
+        # The IMD intensity scale, served rather than duplicated.
+        #
+        # The frontend previously carried its own hand-written copy of these
+        # bands for the plain-language gloss, and every one of them was shifted
+        # by a category: "Cyclonic storm" was labelled 48 to 63 kt, which is
+        # actually Severe Cyclonic Storm. Wrong numbers next to a correct
+        # category name is the kind of error a meteorologist spots in seconds.
+        # `ingest.ibtracs.IMD_SCALE` is the definition the labels themselves
+        # were built from, so it is the only copy that can be right.
+        "imd_scale": _imd_scale(),
     }
+
+
+def _imd_scale() -> list[dict]:
+    """The seven IMD bands with their bounds, from the ingest definition."""
+    from ..ingest.ibtracs import IMD_SCALE
+
+    out = []
+    for i, (code, label, lower) in enumerate(IMD_SCALE):
+        upper = IMD_SCALE[i + 1][2] - 1 if i + 1 < len(IMD_SCALE) else None
+        out.append({
+            "code": code,
+            "label": label,
+            "lower_kt": lower,
+            "upper_kt": upper,
+            "averaging": "3-minute sustained wind, as IMD reports it",
+        })
+    return out
 
 
 def _parse_at(at: str | None, fallback: pd.Timestamp) -> pd.Timestamp:
