@@ -122,21 +122,48 @@ data/                raw, interim, cube, labels, dataset card
 
 ## Running it
 
+The label tables are committed, so the API boots without any download. The
+data cube and the model checkpoint are not: they are large and generated, and
+they are the two steps that take real time.
+
 ```bash
 # backend
 cd backend
 pip install -r requirements.txt
-python scripts/build_labels.py     # real IBTrACS best-track to label tables
-python scripts/build_cube.py       # storm-centred harmonised cube
-python scripts/run_baselines.py    # persistence and CLIPER, the reference numbers
-uvicorn trinetra.api.main:app --reload --port 8000
+
+# One-off. About two minutes: builds the 0.94 GB storm-centred cube at 96 px
+# from the committed label tables.
+python scripts/build_cube.py --size 96 --max-storms 110
+
+# One-off. About 50 minutes on 8 CPU threads for 16 epochs. Writes
+# data/models/trinetra.pt, the embeddings for the out-of-distribution gate,
+# and train_report.json.
+python scripts/train.py --epochs 16 --size 96 --seq 6 --batch 24
+
+uvicorn trinetra.api.main:app --port 8000
 ```
 
 ```bash
-# frontend
+# frontend, in a second terminal
 cd frontend
 npm install
 npm run dev                        # http://localhost:5173
+```
+
+Without a checkpoint the API still starts and every route still renders: the
+model heads report themselves as abstaining with a reason, and the observed
+layers, the tracks, the hazard timeline and the location answers all work,
+since those come from the best-track and the rule set rather than from the
+network. That is a legible degraded state rather than a broken one, and it is
+worth knowing before a demo.
+
+Two optional rebuilds:
+
+```bash
+python scripts/build_labels.py     # re-derive the labels from raw IBTrACS
+                                   # (needs the 27 MB NCEI download first)
+python scripts/run_baselines.py    # persistence, CLIPER and the RI baselines
+                                   # (~3 min; writes data/labels/baselines.json)
 ```
 
 The whole stack, including the queue and the object store, comes up with
