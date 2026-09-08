@@ -1,0 +1,17 @@
+[project]
+name = "trinetra"
+version = "0.4.1"
+description = "Multi-source satellite cyclone intelligence for the North Indian Ocean"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 92
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

@@ -1,0 +1,28 @@
+-r requirements.txt
+
+# Real satellite acquisition. These need credentials, not just installation.
+# See docs/RUNBOOK.md.
+satpy>=0.47              # INSAT and geostationary readers. Do not hand-roll these.
+pyresample>=1.28         # storm-centred LAEA regrid
+xarray>=2024.2
+rioxarray>=0.15
+rasterio>=1.3
+rio-cogeo>=5.3
+zarr>=2.17
+netCDF4>=1.6
+opencv-python>=4.9       # optical flow, advecting to microwave overpass time
+podaac-data-subscriber>=1.14
+copernicusmarine>=1.2
+cdsapi>=0.6
+
+# Live pipeline
+redis>=5.0
+apscheduler>=3.10
+psycopg[binary]>=3.1
+sqlalchemy>=2.0
+onnxruntime>=1.17
+
+# Explainability and retrieval
+grad-cam>=1.5
+shap>=0.45
+faiss-cpu>=1.8

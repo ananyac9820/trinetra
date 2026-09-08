@@ -1,0 +1,41 @@
+# data — raw archives are large and reproducible from the runbook
+data/raw/**
+!data/raw/.gitkeep
+data/cube/*.zarr/
+data/cube/*.npz
+data/interim/*.parquet
+!data/labels/*.csv
+!data/labels/*.json
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# models
+*.pt
+*.onnx
+!backend/trinetra/model/*.py
+
+# node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# tiles / object store
+data/tiles/
+.minio/
+
+# env
+.env
+.env.local
+*.netrc
+.cdsapirc
+
+# os
+.DS_Store
+Thumbs.db
