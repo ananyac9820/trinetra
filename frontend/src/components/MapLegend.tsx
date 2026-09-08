@@ -19,8 +19,8 @@ import { LAYER_PLAIN, REGIME_PLAIN } from "../api/plain";
 import type { Layer } from "../api/types";
 import { useStore } from "../state/store";
 
-export default function MapLegend() {
-  const [open, setOpen] = useState(true);
+export default function MapLegend({ startOpen = true }: { startOpen?: boolean }) {
+  const [open, setOpen] = useState(startOpen);
   const ordered = useStore((s) => s.visibleOrdered)();
   const active = useStore((s) => s.active);
 
@@ -47,7 +47,11 @@ export default function MapLegend() {
   }
 
   return (
-    <div className="glass rise" style={{ width: 258, padding: "12px 14px 13px" }}>
+    <div
+      className="glass rise"
+      style={{ width: "min(258px, calc(100vw - 28px))",
+               padding: "12px 14px 13px" }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 8,
                     marginBottom: 10 }}>
         <h3 style={{ fontSize: 12.5 }}>Legend</h3>

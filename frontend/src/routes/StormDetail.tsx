@@ -62,6 +62,7 @@ export default function StormDetail() {
     <Page
       eyebrow={
         <>
+          TRINETRA classifies this as{" "}
           {c.imd_category_label ?? c.imd_category ?? "unclassified"} ·{" "}
           {state.storm_id}
         </>
@@ -129,7 +130,7 @@ export default function StormDetail() {
           <Big label="Best-track"
                value={num(i.observed_vmax_kt, 0)}
                unit="kt"
-               sub={`label agency ${i.label_agency}`} />
+               sub={`${c.observed_category ?? "unclassified"} · ${i.label_agency}`} />
         </div>
 
         {/* RI */}

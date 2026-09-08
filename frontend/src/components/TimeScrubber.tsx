@@ -200,7 +200,16 @@ export default function TimeScrubber({ track }: Props) {
             {current.regime && (
               <>
                 {" · "}
-                <span style={{ color: REGIME_COLOR[current.regime] }}>
+                {/* The phase along the recorded track. The panel on the right
+                    shows TRINETRA's own regime head for the same moment, with
+                    its confidence, and the two can differ — which is the kind
+                    of disagreement this product exists to surface rather than
+                    smooth over. Both are labelled so neither is mistaken for
+                    the other. */}
+                <span
+                  style={{ color: REGIME_COLOR[current.regime] }}
+                  title="Phase along the recorded track. The panel shows TRINETRA's own estimate for the same moment, which can differ."
+                >
                   {REGIME_PLAIN[current.regime] ??
                     current.regime.replace(/_/g, " ")}
                 </span>

@@ -78,10 +78,27 @@ export default function SidePanel({ state, loading }: Props) {
           <h3 style={{ fontSize: 16 }}>{state.name}</h3>
           <span className="tele">{state.storm_id}</span>
         </div>
-        <div style={{ fontSize: 11.5, color: "var(--fg-1)" }}>
-          {c.imd_category_label ??
-            (c.imd_category ? CATEGORY_LABEL[c.imd_category] : "unclassified")}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6,
+                      marginTop: 2, flexWrap: "wrap" }}>
+          <span className="chip cls-D" style={{ padding: "0 5px", fontSize: 9 }}>
+            D
+          </span>
+          <span style={{ fontSize: 11.5, color: "var(--fg-1)" }}>
+            {c.imd_category_label ??
+              (c.imd_category ? CATEGORY_LABEL[c.imd_category] : "unclassified")}
+          </span>
         </div>
+        {/* The agency's own classification, next to the model's, so the two
+            are never mistaken for one another. On a weak land system the model
+            can be a long way out, and that is exactly the case where showing
+            only its answer would be misleading. */}
+        {c.observed_category && c.observed_category !== c.imd_category && (
+          <div className="tele" style={{ marginTop: 3, whiteSpace: "normal",
+                                         lineHeight: 1.5 }}>
+            best-track has it as{" "}
+            {CATEGORY_LABEL[c.observed_category] ?? c.observed_category}
+          </div>
+        )}
         {c.imd_category && CATEGORY_PLAIN[c.imd_category] && (
           <div style={{ fontSize: 10.5, color: "var(--fg-3)", lineHeight: 1.5,
                         marginTop: 3 }}>
@@ -133,7 +150,7 @@ export default function SidePanel({ state, loading }: Props) {
                 unit="" conf={c.dvorak_conf} note={c.dvorak_status} />
         <Metric
           label="Phase"
-          title="Where the storm is in its life: at sea, being torn apart by wind shear, over land, or a decaying remnant."
+          title="TRINETRA's own estimate of where the storm is in its life: at sea, being torn apart by wind shear, over land, or a decaying remnant. The timeline shows the phase recorded along the track, which can differ."
           value={REGIME_PLAIN[state.regime.label] ??
                  REGIME_LABEL[state.regime.label] ?? state.regime.label}
           unit=""

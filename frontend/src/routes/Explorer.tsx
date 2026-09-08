@@ -38,9 +38,11 @@ import type {
   DistrictRisk, Freshness, Probe as ProbeData, StormState, StormSummary, Track,
 } from "../api/types";
 import { useStore } from "../state/store";
+import { useViewport } from "../state/useViewport";
 
 const LEFT_W = 288;
 const RIGHT_W = 322;
+
 
 export default function Explorer() {
   const [params, setParams] = useSearchParams();
@@ -57,8 +59,19 @@ export default function Explorer() {
   const [probe, setProbe] = useState<ProbeData | null>(null);
   const [probing, setProbing] = useState(false);
   const [presets, setPresets] = useState<Record<string, { label: string; bbox: number[] }>>({});
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
+  const { compact, tight } = useViewport();
+  const [leftOpen, setLeftOpen] = useState(!tight);
+  const [rightOpen, setRightOpen] = useState(!tight);
+
+  /* Panels follow the breakpoint until the user touches one, after which
+     their choice stands. Re-closing a panel someone deliberately opened
+     because the window moved a few pixels is worse than a cramped layout. */
+  const touchedPanels = useRef(false);
+  useEffect(() => {
+    if (touchedPanels.current) return;
+    setLeftOpen(!tight);
+    setRightOpen(!tight);
+  }, [tight]);
   const [copied, setCopied] = useState(false);
   const [trackError, setTrackError] = useState<string | null>(null);
   const [cursor, setCursor] = useState<{ lat: number; lon: number } | null>(null);
@@ -248,7 +261,7 @@ export default function Explorer() {
             borderRadius: "var(--r-pill)",
           }}
         >
-          {Object.entries(presets).map(([k, p]) => (
+          {!compact && Object.entries(presets).map(([k, p]) => (
             <button
               key={k}
               onClick={() => goPreset(k)}
@@ -282,6 +295,7 @@ export default function Explorer() {
           <span
             className="glass num"
             style={{
+              display: tight ? "none" : "inline-block",
               fontSize: 10.5, padding: "6px 12px",
               borderRadius: "var(--r-pill)", color: "var(--fg-2)",
               minWidth: 132, textAlign: "center",
@@ -298,7 +312,7 @@ export default function Explorer() {
                      color: copied ? "var(--accent)" : undefined }}
             title="The whole view is in the address bar. Paste that link anywhere and it opens on exactly this view."
           >
-            {copied ? "Link copied" : "Copy link to this view"}
+            {copied ? "Link copied" : (compact ? "Copy link" : "Copy link to this view")}
           </button>
         </div>
       </div>
@@ -308,10 +322,13 @@ export default function Explorer() {
         side="left"
         open={leftOpen}
         width={LEFT_W}
-        onToggle={() => setLeftOpen((v) => !v)}
+        onToggle={() => { touchedPanels.current = true; setLeftOpen((v) => !v); }}
         label="Layers"
       >
-        <LayerPanel freshness={freshness} onClose={() => setLeftOpen(false)} />
+        <LayerPanel
+          freshness={freshness}
+          onClose={() => { touchedPanels.current = true; setLeftOpen(false); }}
+        />
       </PanelShell>
 
       {/* ------------------------------------------------------ right panel */}
@@ -319,7 +336,7 @@ export default function Explorer() {
         side="right"
         open={rightOpen}
         width={RIGHT_W}
-        onToggle={() => setRightOpen((v) => !v)}
+        onToggle={() => { touchedPanels.current = true; setRightOpen((v) => !v); }}
         label={store.panel === "probe" ? "Probe" : "System"}
         tabs={
           <div style={{ display: "flex", padding: 3, gap: 2 }}>
@@ -360,8 +377,9 @@ export default function Explorer() {
       {/* --------------------------------------------------------- timeline */}
       <div
         style={{
-          position: "absolute", left: leftOpen ? LEFT_W + 26 : 60,
-          right: rightOpen ? RIGHT_W + 26 : 60,
+          position: "absolute",
+          left: compact ? 14 : (leftOpen ? LEFT_W + 26 : 60),
+          right: compact ? 14 : (rightOpen ? RIGHT_W + 26 : 60),
           bottom: 40, zIndex: 20, pointerEvents: "none",
           transition: "left var(--t) var(--ease-out), right var(--t) var(--ease-out)",
         }}
@@ -374,12 +392,14 @@ export default function Explorer() {
       {/* --------------------------------------------------------- legend */}
       <div
         style={{
-          position: "absolute", right: rightOpen ? RIGHT_W + 26 : 60, bottom: 158,
+          position: "absolute",
+          right: compact ? 14 : (rightOpen ? RIGHT_W + 26 : 60),
+          bottom: 158,
           zIndex: 19,
           transition: "right var(--t) var(--ease-out)",
         }}
       >
-        <MapLegend />
+        <MapLegend startOpen={!compact} />
       </div>
 
       {/* ------------------------------------------------- channel age strip */}
