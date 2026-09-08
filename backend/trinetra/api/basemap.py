@@ -119,12 +119,35 @@ def get_land(tolerance: float = 0.02):
 
 
 @lru_cache(maxsize=2)
-def districts_geojson(tolerance: float = 0.01) -> str:
-    """District polygons, simplified. 735 of them, so this is worth doing once."""
+def districts_geojson(tolerance: float = 0.02) -> str:
+    """District polygons, simplified, cached on disk.
+
+    Two things here were worth fixing rather than leaving.
+
+    Simplification must never lose a district. Douglas-Peucker can reduce a
+    small district's ring below the three points a polygon needs, and dropping
+    the feature at that point removes a district from the map entirely: it
+    cannot be clicked, and it silently disappears from the rainfall
+    choropleth. At a tolerance of 0.03 two districts went that way. So a ring
+    that does not survive simplification keeps its original geometry instead.
+
+    The result is cached to disk as well as in memory. Simplifying 735
+    districts takes around six seconds, and paying that on every server start,
+    for geometry that never changes, is the kind of cost that turns into "the
+    demo takes a while to warm up".
+    """
+    cache = C.INTERIM_DIR / f"districts_simplified_{tolerance:.3f}.geojson"
+    if cache.exists():
+        return cache.read_text(encoding="utf-8")
+
     d = districts()
     feats = []
     for i in range(len(d.names)):
-        rings = [_douglas_peucker(r, tolerance) for r in d.rings[i]]
+        rings = []
+        for r in d.rings[i]:
+            simplified = _douglas_peucker(r, tolerance)
+            # Keep the full ring rather than drop the district.
+            rings.append(simplified if len(simplified) >= 4 else r)
         rings = [r for r in rings if len(r) >= 4]
         if not rings:
             continue
@@ -136,16 +159,30 @@ def districts_geojson(tolerance: float = 0.01) -> str:
             "geometry": {"type": "Polygon",
                          "coordinates": [r.tolist() for r in rings]},
         })
-    return json.dumps({
+    if len(feats) != len(d.names):
+        # Loud rather than silent: a missing district is a hole in the product,
+        # not a rendering nicety.
+        log.warning("districts: %d of %d survived simplification at tol %.3f",
+                    len(feats), len(d.names), tolerance)
+
+    out = json.dumps({
         "type": "FeatureCollection",
         "properties": {"source": "geoBoundaries gbOpen India ADM2",
-                       "count": len(feats), "provenance_class": "O"},
+                       "count": len(feats), "provenance_class": "O",
+                       "simplified_tolerance_deg": tolerance},
         "features": feats,
     })
+    try:
+        cache.write_text(out, encoding="utf-8")
+    except OSError:
+        pass  # a read-only data directory is not a reason to fail the request
+    log.info("districts geojson: %d features, %.0f KB at tol %.3f",
+             len(feats), len(out) / 1024, tolerance)
+    return out
 
 
 @router.get("/api/basemap/districts.geojson")
-def get_districts(tolerance: float = 0.01):
+def get_districts(tolerance: float = 0.02):
     return Response(districts_geojson(tolerance), media_type="application/geo+json",
                     headers={"Cache-Control": "public, max-age=604800, immutable"})
 

@@ -42,3 +42,6 @@ Thumbs.db
 data/cube/*.npy
 
 frontend/tsconfig.tsbuildinfo
+
+# Simplified basemap geometry, regenerated on first request
+data/interim/districts_simplified_*.geojson
