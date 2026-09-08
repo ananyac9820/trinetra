@@ -16,7 +16,7 @@
  * costs more than it buys.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { REGIME_PLAIN } from "../api/plain";
 import type { StormSummary } from "../api/types";
 
@@ -94,12 +94,39 @@ export default function StormOverview({ storms, scope, selected, compared,
     () => stormsInScope(storms, scope, selected, compared),
     [storms, scope, selected, compared]);
 
+  /* Collapsed by default while only one storm is on the map.
+     The panel earns its space when it is showing a basin; when it is showing
+     the one storm already named in the picker it is a second copy of the same
+     fact sitting on top of the map. */
+  const [open, setOpen] = useState(scope !== "one");
+
   const seasons = useMemo(() => {
     if (!shown.length) return null;
     const ys = shown.map((s) => s.season);
     const lo = Math.min(...ys), hi = Math.max(...ys);
     return lo === hi ? String(lo) : `${lo}–${hi}`;
   }, [shown]);
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="glass pill rise"
+        title="Show the other storms in the archive on this map"
+        style={{ display: "flex", alignItems: "center", gap: 7,
+                 padding: "6px 12px", fontSize: 11 }}
+      >
+        <span style={{ display: "inline-flex", gap: 2 }}>
+          {[0, 1, 2].map((i) => (
+            <span key={i} style={{ width: 4, height: 4, borderRadius: "50%",
+                                   background: "var(--fg-3)" }} />
+          ))}
+        </span>
+        Storms on the map
+        <span className="tele">{shown.length}</span>
+      </button>
+    );
+  }
 
   return (
     <div
@@ -115,6 +142,15 @@ export default function StormOverview({ storms, scope, selected, compared,
           <h3 style={{ fontSize: 12.5 }}>Storms on the map</h3>
           <span style={{ flex: 1 }} />
           <span className="tele">{shown.length}</span>
+          <button
+            onClick={() => setOpen(false)}
+            className="tele"
+            title="Collapse"
+            style={{ background: "none", border: "none", padding: "0 2px",
+                     cursor: "pointer", color: "var(--fg-3)" }}
+          >
+            ✕
+          </button>
         </div>
 
         <div style={{ display: "flex", gap: 2, marginTop: 8 }}>

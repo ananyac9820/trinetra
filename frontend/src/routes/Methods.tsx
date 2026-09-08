@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import Page, { Section } from "../components/Page";
+import Pipeline from "../components/Pipeline";
 
 export default function Methods() {
   const [m, setM] = useState<any>(null);
@@ -93,6 +94,61 @@ export default function Methods() {
             ))}
           </div>
         )}
+
+        {/* ---------------------------------------------- how it works
+            Two levels on one page, in this order. A reviewer with a
+            meteorology background wants the tables; a reviewer without one
+            needs to know what the thing does before the tables mean anything.
+            Putting the plain version first costs the specialist one scroll and
+            saves the non-specialist the whole page. */}
+        <H2>How it works</H2>
+        <div className="panel" style={{ padding: "18px 20px 14px" }}>
+          <Pipeline />
+          <div className="hair" style={{ margin: "18px 0 14px" }} />
+          <div style={{ display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                        gap: 18 }}>
+            <Plain
+              q="Why several satellites?"
+              a="Each one is blind to something. Infrared sees the cloud tops but
+                 not through them, so a solid canopy hides the core. Microwave
+                 sees through the canopy but only passes overhead a few times a
+                 day. A cloud picture cannot see how warm the ocean underneath
+                 is, and the ocean is the fuel. Reading them together is the
+                 only way to cover each one's blind spot." />
+            <Plain
+              q="What happens when a satellite is missing?"
+              a="The model is told which sensors it had, as an input, and it was
+                 trained with them going missing at the rates they really do.
+                 So it degrades instead of breaking, and the interface says
+                 which sensors were behind any given estimate and how old they
+                 were." />
+            <Plain
+              q="How does it know it might be wrong?"
+              a="Three ways, and all three are on screen. The intensity band is
+                 a checked 90 percent range rather than a guess. Its estimate is
+                 shown next to the other methods, and the gap between them is
+                 flagged. And heads that lack a required input return nothing
+                 rather than a number." />
+            <Plain
+              q="What does it do that a cyclone map does not?"
+              a="It keeps going after the coast. A phase classifier tracks
+                 whether the system is at sea, being sheared, over land or a
+                 remnant, and the leading hazard changes with it: wind at sea,
+                 wind and rain at the coast, rainfall and flooding inland. That
+                 last phase does most of the damage and is where cyclone
+                 products usually stop." />
+          </div>
+        </div>
+
+        <H2>Technical details</H2>
+        <p style={{ fontSize: 12.5, color: "var(--fg-2)", lineHeight: 1.7,
+                    maxWidth: 780, margin: "0 0 14px" }}>
+          Everything below is the specialist version: the baselines, the split
+          protocol, the calibration result, the failure modes and the things
+          this build does not have. Nothing here is rounded in the product's
+          favour.
+        </p>
 
         {/* ---------------------------------------------- label uncertainty */}
         <H2>Label uncertainty</H2>
@@ -560,6 +616,21 @@ export default function Methods() {
     </Page>
   );
 }
+
+/** A plain-language question and answer. No jargon in the question, and the
+ *  answer says what is true rather than what sells. */
+function Plain({ q, a }: { q: string; a: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: 13, color: "var(--fg)" }}>{q}</div>
+      <p style={{ fontSize: 12, color: "var(--fg-2)", lineHeight: 1.7,
+                  margin: "6px 0 0" }}>
+        {a}
+      </p>
+    </div>
+  );
+}
+
 
 function H2({ children }: { children: React.ReactNode }) {
   return <Section title={String(children)} />;

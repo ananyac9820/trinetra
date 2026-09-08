@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Ambient from "../components/Ambient";
+import Pipeline from "../components/Pipeline";
 import ChannelAgeStrip from "../components/ChannelAgeStrip";
 import Graticule from "../components/Graticule";
 import { Reveal, Tilt } from "../components/Reveal";
@@ -98,21 +99,22 @@ export default function Landing() {
           </div>
 
           <h1 className="display" style={{ margin: "24px 0 0" }}>
-            <span className="grad">Multi-source</span> satellite
+            From cyclone forecast
             <br />
-            cyclone intelligence.
+            to <span className="grad">ground impact</span>.
           </h1>
 
           <p
             style={{
               fontSize: 15.5, lineHeight: 1.72, color: "var(--fg-1)",
-              maxWidth: 640, margin: "22px auto 0",
+              maxWidth: 660, margin: "22px auto 0",
             }}
           >
-            TRINETRA identifies, classifies and predicts tropical cyclone
-            patterns over the North Indian Ocean — and shows you which sensors
-            it actually had, how old they were, and where its estimate
-            disagrees with the other methods on the table.
+            See what a cyclone is doing, why it is changing, and what that could
+            mean on the ground. TRINETRA reads several satellites together over
+            the North Indian Ocean, and shows you which sensors it actually had,
+            how old they were, and where its estimate disagrees with the other
+            methods on the table.
           </p>
 
           <div
@@ -123,15 +125,18 @@ export default function Landing() {
           >
             <Link to="/explorer" className="btn primary pill"
                   style={{ padding: "10px 22px", fontSize: 13 }}>
-              Open the Cyclone Explorer →
-            </Link>
-            <Link to="/archive" className="btn pill"
-                  style={{ padding: "10px 20px", fontSize: 13 }}>
-              Replay a storm
+              Explore cyclones →
             </Link>
             <Link to="/methods" className="btn pill"
                   style={{ padding: "10px 20px", fontSize: 13 }}>
-              Validation and limits
+              See how it works
+            </Link>
+            <Link to={"/explorer?storm=2023156N10067&view=impact" +
+                      "&at=2023-06-16T00%3A00%3A00Z"}
+                  className="btn pill"
+                  style={{ padding: "10px 20px", fontSize: 13 }}
+                  title="Biparjoy after landfall: the wind has gone and the rain has not">
+              See a storm come ashore
             </Link>
           </div>
 
@@ -153,6 +158,23 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ------------------------------------------------- the four steps
+          Placed immediately after the hero, before the case study, because a
+          reader who does not yet know what the product is cannot tell why the
+          case study matters. */}
+      <Band>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12,
+                      marginBottom: 4 }}>
+          <h2 className="display-sm">Four steps, and the fourth is the point</h2>
+        </div>
+        <p style={{ fontSize: 13.5, color: "var(--fg-2)", lineHeight: 1.7,
+                    maxWidth: 620, margin: "8px 0 22px" }}>
+          Plenty of systems do the first three. TRINETRA is built so the fourth
+          one still works after the storm stops being a cyclone.
+        </p>
+        <Pipeline />
+      </Band>
 
       {/* ---------------------------------------------------- the case */}
       <Band>
