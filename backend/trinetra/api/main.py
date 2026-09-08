@@ -805,6 +805,90 @@ def _layer_for_channel(channel: str) -> str:
     }[channel]
 
 
+# ---------------------------------------------------------------- hazard
+
+
+@app.get("/api/storms/{storm_id}/hazard")
+def get_hazard(storm_id: str, at: str | None = None):
+    """The dominant hazard at this moment, and why.
+
+    A cyclone is not the same threat everywhere or at every stage. This is the
+    endpoint that says which threat leads right now, in ordinary words, with
+    the quantities that produced the call.
+    """
+    from ..inference import hazard as H
+
+    e = engine()
+    # The storm id is resolved up front so a genuinely unknown storm is a 404
+    # and an internal KeyError is not silently reported as one.
+    try:
+        e.resolve(storm_id)
+    except KeyError:
+        raise HTTPException(404, f"unknown storm {storm_id}") from None
+    return jsonable(H.hazard_at(e, storm_id, at=at))
+
+
+@app.get("/api/storms/{storm_id}/hazard/timeline")
+def get_hazard_timeline(storm_id: str, max_points: int = 60):
+    """How the dominant hazard migrates across the storm's life.
+
+    This is the clearest single expression of the project's argument: the
+    threat moves from wind to rainfall as the system comes ashore, and it does
+    not simply stop at the coastline.
+    """
+    from ..inference import hazard as H
+
+    e = engine()
+    # The storm id is resolved up front so a genuinely unknown storm is a 404
+    # and an internal KeyError is not silently reported as one.
+    try:
+        e.resolve(storm_id)
+    except KeyError:
+        raise HTTPException(404, f"unknown storm {storm_id}") from None
+    return jsonable(H.hazard_timeline(e, storm_id, max_points=max_points))
+
+
+@app.get("/api/storms/{storm_id}/changes")
+def get_changes(storm_id: str, at: str | None = None, hours: float = 6.0):
+    """What changed over the last few hours.
+
+    The question a person arriving at a moving situation actually has. Rows
+    where a quantity is unavailable at either end say so rather than reporting
+    a change of zero.
+    """
+    from ..inference import hazard as H
+
+    e = engine()
+    # The storm id is resolved up front so a genuinely unknown storm is a 404
+    # and an internal KeyError is not silently reported as one.
+    try:
+        e.resolve(storm_id)
+    except KeyError:
+        raise HTTPException(404, f"unknown storm {storm_id}") from None
+    return jsonable(H.changes(e, storm_id, at=at, hours=hours))
+
+
+@app.get("/api/impact")
+def get_impact(lat: float, lon: float, storm_id: str, at: str | None = None):
+    """What this cyclone means at one point on the ground.
+
+    Exposure categories that need a dataset this build does not have come back
+    in `exposure_unavailable` with the reason, rather than being estimated. A
+    fabricated population-at-risk figure is the easiest number to put on a
+    slide and the least defensible.
+    """
+    from ..inference import hazard as H
+
+    e = engine()
+    # The storm id is resolved up front so a genuinely unknown storm is a 404
+    # and an internal KeyError is not silently reported as one.
+    try:
+        e.resolve(storm_id)
+    except KeyError:
+        raise HTTPException(404, f"unknown storm {storm_id}") from None
+    return jsonable(H.location_impact(e, lat, lon, storm_id, at=at))
+
+
 # ---------------------------------------------------------------- districts
 
 

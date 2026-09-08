@@ -76,6 +76,21 @@ class Disagreement:
         }
 
 
+_COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+
+
+def _compass(deg) -> str | None:
+    """Bearing as a compass point.
+
+    A heading is far easier to read as "moving NW" than as "moving 315 degrees",
+    and the overview list has room for one or the other.
+    """
+    if deg is None or not np.isfinite(deg):
+        return None
+    return _COMPASS[int(round(float(deg) % 360.0 / 22.5)) % 16]
+
+
 def _r(x, n: int = 2):
     if x is None or not np.isfinite(x):
         return None
@@ -144,9 +159,21 @@ class InferenceEngine:
         return pd.Timestamp(self.labels["valid_time"].max())
 
     def storms(self) -> list[dict]:
+        """One entry per storm, including its last recorded position.
+
+        The position, heading and final intensity are here so the multi-storm
+        overview can draw and label every system from a single request. Fetching
+        113 fixes per storm to find the last one, for 110 storms, would be a
+        hundred-odd round trips to render one list.
+        """
         out = []
         for sid, g in self._tracks.items():
+            g = g.sort_values("valid_time")
             peak = float(g["vmax_kt"].max())
+            last = g.iloc[-1]
+            last_v = float(last["vmax_kt"]) if np.isfinite(last["vmax_kt"]) else None
+            heading = (float(last["storm_dir_deg"])
+                       if np.isfinite(last["storm_dir_deg"]) else None)
             out.append({
                 "storm_id": sid,
                 "name": str(g["name"].iloc[0]),
@@ -160,6 +187,17 @@ class InferenceEngine:
                 "made_landfall": bool(g["dist2land_km"].min() <= 0),
                 "featured_slug": (None if pd.isna(g["featured_slug"].iloc[0])
                                   else str(g["featured_slug"].iloc[0])),
+                # Last recorded state, for the overview map and list.
+                "last_lat": _r(last["lat"], 3),
+                "last_lon": _r(last["lon"], 3),
+                "last_vmax_kt": _r(last_v, 0),
+                "last_category": imd_category(last_v) if last_v else None,
+                "last_regime": str(last["regime"]),
+                "heading_deg": _r(heading, 0),
+                "heading_compass": _compass(heading),
+                "speed_kt": _r(last["storm_speed_kt"], 0),
+                "last_over_land": (bool(last["dist2land_km"] <= 0)
+                                   if np.isfinite(last["dist2land_km"]) else None),
             })
         return sorted(out, key=lambda s: s["start_time"], reverse=True)
 
