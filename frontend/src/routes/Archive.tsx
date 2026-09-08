@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { StormSummary } from "../api/types";
+import Page, { Section } from "../components/Page";
 
 const STORIES: Record<string, { title: string; body: string }> = {
   biparjoy: {
@@ -73,33 +74,44 @@ export default function Archive() {
   }, [storms, q, onlyLandfall]);
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "22px 28px 44px" }}>
-        <h1 style={{ fontSize: 24, letterSpacing: "-0.02em" }}>Archive</h1>
-        <p style={{ fontSize: 13, color: "var(--fg-2)", maxWidth: 720,
-                    lineHeight: 1.65, marginTop: 8 }}>
-          {storms.length} storms from the IBTrACS North Indian Ocean best-track,
-          1990 onward. Every entry opens in replay, which runs the same inference
-          path as live mode with the archive reader in place of the watchers and
-          the scrubber in place of the clock.
-        </p>
-
+    <Page
+      eyebrow="Replay"
+      title="Archive"
+      width={1160}
+      lede={
+        <>
+          {storms.length || "—"} storms from the IBTrACS North Indian Ocean
+          best-track, 1990 onward. Every entry opens in replay, which runs the
+          same inference path as live mode with the archive reader in place of
+          the watchers and the scrubber in place of the clock.
+        </>
+      }
+      actions={
+        <Link to="/explorer" className="btn primary"
+              style={{ textDecoration: "none" }}>
+          Open the Explorer
+        </Link>
+      }
+    >
+      <div>
+        <Section title="Featured cases" note="the argument for the project" />
         <div style={{ display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                      gap: 14, marginTop: 20 }}>
+                      gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))",
+                      gap: 14 }}>
           {featured.map((s) => {
             const story = STORIES[s.featured_slug!];
             if (!story) return null;
             return (
-              <div key={s.storm_id} className="panel rise"
-                   style={{ padding: "14px 16px" }}>
+              <div key={s.storm_id} className="panel ticked rise"
+                   style={{ padding: "16px 18px", display: "flex",
+                            flexDirection: "column" }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <h3 style={{ fontSize: 14 }}>{story.title}</h3>
+                  <h3 style={{ fontSize: 14.5 }}>{story.title}</h3>
                   <span style={{ flex: 1 }} />
                   <span className="tele">{s.peak_category}</span>
                 </div>
-                <p style={{ fontSize: 12, color: "var(--fg-2)", lineHeight: 1.65,
-                            margin: "8px 0 10px" }}>
+                <p style={{ fontSize: 12, color: "var(--fg-2)", lineHeight: 1.7,
+                            margin: "10px 0 12px", flex: 1 }}>
                   {story.body}
                 </p>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap",
@@ -127,29 +139,25 @@ export default function Archive() {
           })}
         </div>
 
+        <Section title="All storms" note={`${filtered.length} shown`} />
         <div style={{ display: "flex", alignItems: "center", gap: 12,
-                      margin: "30px 0 8px", flexWrap: "wrap" }}>
-          <h2 style={{ fontSize: 15 }}>All storms</h2>
+                      marginBottom: 12, flexWrap: "wrap" }}>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="search name, season, category"
-            style={{ background: "var(--bg-2)", color: "var(--fg)",
-                     border: "1px solid var(--line-strong)",
-                     borderRadius: "var(--r-sm)", padding: "5px 9px",
-                     fontSize: 12, minWidth: 230 }}
+            placeholder="Search name, season, basin, category"
+            style={{ minWidth: 260 }}
           />
-          <label style={{ display: "flex", alignItems: "center", gap: 6,
+          <label style={{ display: "flex", alignItems: "center", gap: 7,
                           fontSize: 12, color: "var(--fg-2)" }}>
             <input type="checkbox" checked={onlyLandfall}
                    onChange={(e) => setOnlyLandfall(e.target.checked)} />
             made landfall
           </label>
-          <span style={{ flex: 1 }} />
-          <span className="tele">{filtered.length} shown</span>
         </div>
 
-        <div className="panel scroll-x" style={{ padding: "4px 0" }}>
+        <div className="panel scroll-x" style={{ padding: "2px 0",
+                                                 maxHeight: 620, overflowY: "auto" }}>
           <table className="data">
             <thead>
               <tr>
@@ -190,11 +198,17 @@ export default function Archive() {
           </table>
         </div>
 
-        <div className="disclaimer" style={{ marginTop: 20 }}>
+        {!filtered.length && storms.length > 0 && (
+          <div className="tele" style={{ padding: "16px 2px" }}>
+            no storm matches that filter
+          </div>
+        )}
+
+        <div className="disclaimer" style={{ marginTop: 26 }}>
           Best-track: IBTrACS v04r01, NOAA NCEI. IMD / RSMC New Delhi is the
           responsible warning authority. <Link to="/methods">Methods →</Link>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

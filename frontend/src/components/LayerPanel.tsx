@@ -62,7 +62,7 @@ export default function LayerPanel({ freshness }: Props) {
   }, [blocked, clearBlocked]);
 
   if (!manifest) {
-    return <div className="tele" style={{ padding: 12 }}>loading manifest…</div>;
+    return <div className="tele" style={{ padding: 14 }}>loading manifest…</div>;
   }
 
   const channelState = (l: Layer) => {
@@ -73,9 +73,11 @@ export default function LayerPanel({ freshness }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ padding: "10px 12px 8px", borderBottom: "1px solid var(--line)" }}>
-        <div className="tele">Layers</div>
-        <div style={{ fontSize: 10.5, color: "var(--fg-3)", marginTop: 4, lineHeight: 1.45 }}>
+      <div style={{ padding: "11px 14px 9px", borderBottom: "1px solid var(--line)",
+                    flex: "none" }}>
+        <div className="tele" style={{ color: "var(--fg-2)" }}>Layers</div>
+        <div style={{ fontSize: 10.5, color: "var(--fg-3)", marginTop: 4,
+                      lineHeight: 1.45 }}>
           Grouped by provenance, not by theme.
         </div>
       </div>
@@ -105,7 +107,8 @@ export default function LayerPanel({ freshness }: Props) {
                 display: "flex", alignItems: "center", gap: 7,
                 padding: "9px 12px 5px",
                 position: "sticky", top: 0, zIndex: 2,
-                background: "linear-gradient(180deg, var(--bg-1) 72%, transparent)",
+                background: "linear-gradient(180deg, rgba(9,13,19,0.96) 68%, transparent)",
+                backdropFilter: "blur(6px)",
               }}
             >
               <span className={`swatch cls-${g.layers[0].class}`} />
@@ -126,9 +129,9 @@ export default function LayerPanel({ freshness }: Props) {
                   key={l.id}
                   className={stale ? "stale" : undefined}
                   style={{
-                    padding: "5px 12px",
+                    padding: "6px 14px",
                     borderLeft: on ? "2px solid var(--accent)" : "2px solid transparent",
-                    background: on ? "var(--bg-2)" : "transparent",
+                    background: on ? "rgba(79,224,207,0.07)" : "transparent",
                     transition: "background var(--t-fast) var(--ease-out)",
                   }}
                 >

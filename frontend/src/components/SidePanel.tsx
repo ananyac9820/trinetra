@@ -26,18 +26,40 @@ const CONFIDENCE_COLOUR: Record<string, string> = {
 
 interface Props {
   state: StormState | null;
+  loading?: boolean;
 }
 
-export default function SidePanel({ state }: Props) {
+export default function SidePanel({ state, loading }: Props) {
   if (!state) {
     return (
-      <div style={{ padding: 14 }}>
+      <div style={{ padding: 16 }}>
         <div className="tele">Selected system</div>
-        <div style={{ fontSize: 11.5, color: "var(--fg-2)", marginTop: 6,
-                      lineHeight: 1.55 }}>
-          No system selected. Pick one from the storm selector, or click a marker
-          on the map.
-        </div>
+        {loading ? (
+          <div style={{ marginTop: 12 }}>
+            {/* Skeleton rather than a spinner: the panel's shape is stable, so
+                showing its shape is more informative than showing motion. */}
+            {[62, 88, 44, 74].map((w, k) => (
+              <div
+                key={k}
+                className="fade"
+                style={{
+                  height: 11, width: `${w}%`, marginBottom: 9, borderRadius: 3,
+                  background: "rgba(255,255,255,0.055)",
+                  animationDelay: `${k * 90}ms`,
+                }}
+              />
+            ))}
+            <div className="tele" style={{ marginTop: 14 }}>
+              running inference…
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: 11.5, color: "var(--fg-2)", marginTop: 8,
+                        lineHeight: 1.6 }}>
+            No system selected. Pick one from the storm selector, or click a
+            marker on the map.
+          </div>
+        )}
       </div>
     );
   }
@@ -48,10 +70,11 @@ export default function SidePanel({ state }: Props) {
   const d = state.disagreement;
 
   return (
-    <div className="stagger" style={{ padding: "10px 12px", overflowY: "auto" }}>
+    <div className="stagger" style={{ padding: "12px 14px 16px", overflowY: "auto",
+                                      flex: 1, minHeight: 0 }}>
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-          <h3 style={{ fontSize: 15 }}>{state.name}</h3>
+          <h3 style={{ fontSize: 16 }}>{state.name}</h3>
           <span className="tele">{state.storm_id}</span>
         </div>
         <div style={{ fontSize: 11.5, color: "var(--fg-1)" }}>

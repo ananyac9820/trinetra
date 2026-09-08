@@ -79,9 +79,8 @@ export default function ChannelAgeStrip({ freshness, compact = false }: Props) {
     <div
       style={{
         display: "flex", alignItems: "center", gap: 12,
-        padding: compact ? "5px 10px" : "6px 12px",
-        borderTop: "1px solid var(--line)",
-        background: "var(--bg-1)", minHeight: 28, overflow: "hidden",
+        padding: compact ? "6px 14px" : "7px 16px",
+        minHeight: 30, overflow: "hidden",
       }}
     >
       <span className="tele" style={{ flex: "none", color: "var(--fg-2)" }}>

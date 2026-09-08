@@ -133,8 +133,8 @@ export default function TimeScrubber({ track }: Props) {
 
   if (!points.length) {
     return (
-      <div style={{ padding: "10px 12px", borderTop: "1px solid var(--line)" }}>
-        <span className="tele">No track loaded</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, height: 58 }}>
+        <span className="tele">Loading track…</span>
       </div>
     );
   }
@@ -149,29 +149,33 @@ export default function TimeScrubber({ track }: Props) {
   const bulletins = track?.bulletin_times ?? [];
 
   return (
-    <div
-      style={{
-        padding: "8px 12px 10px", borderTop: "1px solid var(--line)",
-        background: "var(--bg-1)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <button
           onClick={() => set({ playing: !playing })}
           className={playing ? "active" : undefined}
           title="space"
-          style={{ width: 30, padding: "3px 0", fontFamily: "var(--mono)" }}
+          aria-label={playing ? "pause" : "play"}
+          style={{
+            width: 34, height: 30, padding: 0, borderRadius: "var(--r-pill)",
+            fontFamily: "var(--mono)", fontSize: 12,
+            ...(playing ? {} : { color: "var(--accent-ink)",
+                                 background: "linear-gradient(180deg, var(--accent-2), var(--accent))",
+                                 borderColor: "transparent" }),
+          }}
         >
           {playing ? "❙❙" : "▶"}
         </button>
         <button onClick={() => { set({ playing: false }); goTo(index - 1); }}
                 title="left arrow: step back one inference step"
-                style={{ padding: "3px 7px" }}>
+                aria-label="step back"
+                className="icon-btn">
           ◀
         </button>
         <button onClick={() => { set({ playing: false }); goTo(index + 1); }}
                 title="right arrow: step forward one inference step"
-                style={{ padding: "3px 7px" }}>
+                aria-label="step forward"
+                className="icon-btn">
           ▶
         </button>
 
@@ -182,7 +186,8 @@ export default function TimeScrubber({ track }: Props) {
               className={speed === sp ? "active" : undefined}
               onClick={() => set({ speed: sp })}
               title="playback advances the inference index, not wall-clock seconds"
-              style={{ padding: "3px 7px", fontFamily: "var(--mono)", fontSize: 11 }}
+              style={{ padding: "4px 9px", fontFamily: "var(--mono)", fontSize: 11,
+                       borderRadius: "var(--r-pill)" }}
             >
               {sp}×
             </button>
@@ -193,7 +198,7 @@ export default function TimeScrubber({ track }: Props) {
           className={follow ? "active" : undefined}
           onClick={() => set({ follow: !follow })}
           title="F: lock the viewport to the moving centre. Off by default; disorienting when on."
-          style={{ padding: "3px 8px", fontSize: 11 }}
+          style={{ padding: "4px 12px", fontSize: 11, borderRadius: "var(--r-pill)" }}
         >
           Follow
         </button>
@@ -201,7 +206,8 @@ export default function TimeScrubber({ track }: Props) {
         <span style={{ flex: 1 }} />
 
         <div style={{ textAlign: "right" }}>
-          <div className="num" style={{ fontSize: 12.5, color: "var(--fg)" }}>
+          <div className="num" style={{ fontSize: 13.5, color: "var(--fg)",
+                                        letterSpacing: "-0.01em" }}>
             {formatUtc(current.valid_time)}
           </div>
           <div className="tele">
@@ -219,11 +225,12 @@ export default function TimeScrubber({ track }: Props) {
       </div>
 
       {/* The axis. */}
-      <div style={{ position: "relative", height: 34 }}>
+      <div style={{ position: "relative", height: 32 }}>
         {/* Regime bands behind the axis, so the land-sea transition is visible
             on the timeline as well as on the map. */}
-        <div style={{ position: "absolute", left: 0, right: 0, top: 6, height: 5,
-                      borderRadius: 3, overflow: "hidden", background: "var(--bg-3)" }}>
+        <div style={{ position: "absolute", left: 0, right: 0, top: 5, height: 7,
+                      borderRadius: 4, overflow: "hidden",
+                      background: "rgba(255,255,255,0.06)" }}>
           {track!.regime_segments.map((seg, i) => {
             const a = pct(seg.start_time);
             const b = pct(seg.end_time);
@@ -261,8 +268,8 @@ export default function TimeScrubber({ track }: Props) {
             title="coastline crossing"
             style={{
               position: "absolute", left: `${pct(points[track!.landfall_index!].valid_time)}%`,
-              top: 0, bottom: 14, width: 1.5,
-              background: "var(--regime-overland)", opacity: 0.85,
+              top: 0, bottom: 12, width: 1.5,
+              background: "var(--regime-overland)", opacity: 0.9,
             }}
           />
         )}
@@ -274,7 +281,7 @@ export default function TimeScrubber({ track }: Props) {
             title={`IMD bulletin ${formatUtcShort(b)}`}
             style={{
               position: "absolute", left: `${pct(b)}%`, top: 15, height: 6,
-              width: 1, background: "var(--fg-3)",
+              width: 1, background: "var(--fg-3)", opacity: 0.8,
             }}
           />
         ))}
@@ -288,8 +295,8 @@ export default function TimeScrubber({ track }: Props) {
           onChange={(e) => { set({ playing: false }); goTo(Number(e.target.value)); }}
           aria-label="time"
           style={{
-            position: "absolute", left: 0, right: 0, top: 3, width: "100%",
-            background: "transparent",
+            position: "absolute", left: 0, right: 0, top: 2, width: "100%",
+            background: "transparent", height: 13, cursor: "pointer",
           }}
         />
 

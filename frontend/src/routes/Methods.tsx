@@ -20,6 +20,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import Page, { Section } from "../components/Page";
 
 export default function Methods() {
   const [m, setM] = useState<any>(null);
@@ -29,27 +30,55 @@ export default function Methods() {
     api.methods().then(setM).catch((e) => setErr(String(e)));
   }, []);
 
-  if (err) return <div style={{ padding: 24, color: "var(--alert)" }}>{err}</div>;
-  if (!m) return <div style={{ padding: 24 }}><span className="tele">loading…</span></div>;
+  if (err) {
+    return (
+      <Page title="Methods, validation and limits" eyebrow="Credibility">
+        <div className="panel ticked" style={{ padding: "18px 20px",
+          borderColor: "color-mix(in srgb, var(--alert) 40%, transparent)" }}>
+          <div className="tele" style={{ color: "var(--alert)", marginBottom: 6 }}>
+            Could not load the methods report
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--fg-1)", lineHeight: 1.6 }}>
+            {err}. The API serves this page from the evaluation artefacts on
+            disk; if the backend is not running there is nothing to report and
+            nothing is invented in its place.
+          </div>
+        </div>
+      </Page>
+    );
+  }
+  if (!m) {
+    return (
+      <Page title="Methods, validation and limits" eyebrow="Credibility">
+        <div className="tele">loading evaluation artefacts…</div>
+      </Page>
+    );
+  }
 
   const bl = m.baselines ?? {};
   const am = m.analysis_model ?? {};
   const lu = bl.label_uncertainty ?? {};
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
-      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "22px 28px 48px" }}>
-        <h1 style={{ fontSize: 24, letterSpacing: "-0.02em" }}>
-          Methods, validation and limits
-        </h1>
-        <p style={{ fontSize: 13, color: "var(--fg-2)", maxWidth: 760,
-                    lineHeight: 1.65, marginTop: 8 }}>
+    <Page
+      eyebrow="Credibility"
+      title="Methods, validation and limits"
+      width={1060}
+      lede={
+        <>
           Every headline number here carries a named baseline and a bootstrap
           interval resampled over storms rather than over rows. The split
           configuration is published below so the numbers can be reproduced
           instead of taken on trust.
-        </p>
-
+        </>
+      }
+      actions={
+        <Link to="/archive" className="btn" style={{ textDecoration: "none" }}>
+          Browse the archive
+        </Link>
+      }
+    >
+      <div>
         {m.warnings?.length > 0 && (
           <div className="panel" style={{ padding: "10px 14px", marginTop: 14,
             borderColor: "color-mix(in srgb, var(--warn) 40%, transparent)" }}>
@@ -67,7 +96,7 @@ export default function Methods() {
 
         {/* ---------------------------------------------- label uncertainty */}
         <H2>Label uncertainty</H2>
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           <p style={{ fontSize: 12.5, color: "var(--fg-1)", lineHeight: 1.65,
                       margin: 0 }}>
             {lu.description ??
@@ -137,7 +166,7 @@ export default function Methods() {
         {/* stratified */}
         {bl.forecast?.vmax_24h?.find((r: any) => r.baseline === "CLIPER")
           ?.by_intensity?.length > 0 && (
-          <div className="panel scroll-x" style={{ padding: "4px 0" }}>
+          <div className="panel scroll-x" style={{ padding: "2px 0" }}>
             <div className="tele" style={{ padding: "8px 14px 2px" }}>
               CLIPER at +24 h, stratified by verifying intensity
             </div>
@@ -182,7 +211,7 @@ export default function Methods() {
         <H2>Rapid intensification, and what calibration is for</H2>
         {bl.forecast?.ri_24h && (
           <>
-            <div className="panel scroll-x" style={{ padding: "4px 0" }}>
+            <div className="panel scroll-x" style={{ padding: "2px 0" }}>
               <table className="data">
                 <thead>
                   <tr>
@@ -277,7 +306,7 @@ export default function Methods() {
         )}
 
         {am.analysis && (
-          <div className="panel" style={{ padding: "14px 16px" }}>
+          <div className="panel ticked" style={{ padding: "16px 18px" }}>
             <div className="tele" style={{ marginBottom: 8 }}>TRINETRA model</div>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <Stat label="VMAX RMSE" value={fmt(am.analysis.vmax_rmse_ci?.point, 2)}
@@ -378,7 +407,7 @@ export default function Methods() {
               puts near-copies on both sides and the model scores well having
               learned nothing.
             </Note>
-            <div className="panel scroll-x" style={{ padding: "4px 0" }}>
+            <div className="panel scroll-x" style={{ padding: "2px 0" }}>
               <div style={{ display: "flex", gap: 22, padding: "8px 14px",
                             flexWrap: "wrap" }}>
                 <Stat label="Fixes" value={fmtInt(m.splits.n_fixes)} />
@@ -397,7 +426,7 @@ export default function Methods() {
         {m.ood?.calibration && (
           <>
             <H2>Out-of-distribution gate</H2>
-            <div className="panel" style={{ padding: "14px 16px" }}>
+            <div className="panel ticked" style={{ padding: "16px 18px" }}>
               <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
                 <Stat label="Threshold" value={fmt(m.ood.threshold, 3)}
                       sub={`quantile ${m.ood.calibration.quantile}`} />
@@ -425,7 +454,7 @@ export default function Methods() {
 
         {/* ---------------------------------------------- failure modes */}
         <H2>Known failure modes</H2>
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5,
                        color: "var(--fg-1)", lineHeight: 1.75 }}>
             {(m.known_failure_modes ?? []).map((f: string, i: number) => (
@@ -435,7 +464,7 @@ export default function Methods() {
         </div>
 
         <H2>Not attempted</H2>
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5,
                        color: "var(--fg-1)", lineHeight: 1.75 }}>
             {(m.not_attempted ?? []).map((f: string, i: number) => (
@@ -445,7 +474,7 @@ export default function Methods() {
         </div>
 
         <H2>Honesty register</H2>
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5,
                        color: "var(--fg-1)", lineHeight: 1.75 }}>
             {(m.honesty ?? []).map((f: string, i: number) => (
@@ -458,7 +487,7 @@ export default function Methods() {
         {m.reference_points && (
           <>
             <H2>Reference points</H2>
-            <div className="panel scroll-x" style={{ padding: "4px 0" }}>
+            <div className="panel scroll-x" style={{ padding: "2px 0" }}>
               <table className="data">
                 <tbody>
                   <tr>
@@ -522,24 +551,18 @@ export default function Methods() {
           </>
         )}
 
-        <div className="disclaimer" style={{ marginTop: 24 }}>
+        <div className="disclaimer" style={{ marginTop: 30 }}>
           Decision support only. IMD / RSMC New Delhi is the responsible warning
           authority for the North Indian Ocean.{" "}
           <Link to="/">Back to overview</Link>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }
 
 function H2({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 10,
-                  margin: "28px 0 8px" }}>
-      <h2 style={{ fontSize: 15 }}>{children}</h2>
-      <span className="hair" style={{ flex: 1 }} />
-    </div>
-  );
+  return <Section title={String(children)} />;
 }
 
 function Note({ children }: { children: React.ReactNode }) {

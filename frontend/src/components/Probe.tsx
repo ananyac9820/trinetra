@@ -49,14 +49,28 @@ interface Props {
 export default function Probe({ probe, loading, onClose }: Props) {
   if (loading && !probe) {
     return (
-      <div style={{ padding: 12 }}>
-        <span className="tele">probing…</span>
+      <div style={{ padding: 16 }}>
+        <div className="tele">Probe</div>
+        <div style={{ marginTop: 12 }}>
+          {[70, 50, 84].map((w, k) => (
+            <div
+              key={k}
+              className="fade"
+              style={{
+                height: 11, width: `${w}%`, marginBottom: 9, borderRadius: 3,
+                background: "rgba(255,255,255,0.055)",
+                animationDelay: `${k * 90}ms`,
+              }}
+            />
+          ))}
+          <div className="tele" style={{ marginTop: 12 }}>sampling granules…</div>
+        </div>
       </div>
     );
   }
   if (!probe) {
     return (
-      <div style={{ padding: 14 }}>
+      <div style={{ padding: 16 }}>
         <div className="tele" style={{ marginBottom: 6 }}>Probe</div>
         <div style={{ fontSize: 11.5, color: "var(--fg-2)", lineHeight: 1.55 }}>
           Click anywhere on the map. Every active layer returns its value at that
@@ -71,7 +85,8 @@ export default function Probe({ probe, loading, onClose }: Props) {
   const nulls = observed.filter((v) => v.value === null).length;
 
   return (
-    <div className="stagger" style={{ padding: "10px 12px", overflowY: "auto" }}>
+    <div className="stagger" style={{ padding: "12px 14px 16px", overflowY: "auto",
+                                      flex: 1, minHeight: 0 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <div>
           <div className="num" style={{ fontSize: 13 }}>

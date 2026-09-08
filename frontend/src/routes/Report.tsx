@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, formatUtc } from "../api/client";
 import type { StormState } from "../api/types";
+import Page from "../components/Page";
 
 const FORMATS = [
   {
@@ -90,65 +91,80 @@ export default function Report() {
   };
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
-      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "22px 28px 44px" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12,
-                      flexWrap: "wrap" }}>
-          <h1 style={{ fontSize: 22, letterSpacing: "-0.02em" }}>
-            Operational outputs
-          </h1>
-          {state && (
-            <span className="tele">
-              {state.name} · {formatUtc(state.valid_time)}
-            </span>
-          )}
-          <span style={{ flex: 1 }} />
-          <Link to={`/storm/${id}`} className="btn" style={{ textDecoration: "none" }}>
-            Back to storm detail
-          </Link>
-        </div>
-
-        <div style={{ display: "flex", gap: 4, marginTop: 16, flexWrap: "wrap" }}>
+    <Page
+      eyebrow={state ? `${state.name} · ${formatUtc(state.valid_time)}` : "Outputs"}
+      title="Operational outputs"
+      width={1060}
+      lede={
+        <>
+          The difference between a research result and a system is often just
+          whether it emits the formats the receiving desk already parses. These
+          are generated from the same inference the Explorer displays.
+        </>
+      }
+      actions={
+        <Link to={`/storm/${id}`} className="btn" style={{ textDecoration: "none" }}>
+          Back to storm detail
+        </Link>
+      }
+    >
+      <div>
+        <div
+          className="glass"
+          style={{ display: "inline-flex", gap: 2, padding: 3,
+                   borderRadius: "var(--r-pill)", flexWrap: "wrap" }}
+        >
           {FORMATS.map((f) => (
-            <button key={f.key} className={active === f.key ? "active" : undefined}
-                    onClick={() => setActive(f.key)}>
+            <button
+              key={f.key}
+              onClick={() => setActive(f.key)}
+              className="pill"
+              style={{
+                border: "none", fontSize: 12,
+                background: active === f.key ? "var(--accent-glow)" : "transparent",
+                color: active === f.key ? "var(--accent)" : "var(--fg-2)",
+              }}
+            >
               {f.label}
             </button>
           ))}
         </div>
 
-        <div style={{ fontSize: 11.5, color: "var(--fg-2)", marginTop: 8,
-                      lineHeight: 1.6, maxWidth: 760 }}>
+        <div style={{ fontSize: 12, color: "var(--fg-2)", marginTop: 14,
+                      lineHeight: 1.7, maxWidth: 760 }}>
           {FORMATS.find((f) => f.key === active)?.why}
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 16, alignItems: "center" }}>
           <button onClick={copy}>{copied ? "Copied" : "Copy"}</button>
           <a className="btn" href={api.reportUrl(id, active, at)} download
              style={{ textDecoration: "none" }}>
             Download
           </a>
           <span style={{ flex: 1 }} />
-          <span className="tele">{body.length.toLocaleString("en-IN")} chars</span>
+          <span className="tele">
+            {loading ? "generating…" : `${body.length.toLocaleString("en-IN")} chars`}
+          </span>
         </div>
 
         <pre
-          className="panel"
+          className="panel ticked"
           style={{
-            marginTop: 12, padding: "14px 16px", fontFamily: "var(--mono)",
-            fontSize: 11.5, lineHeight: 1.6, color: "var(--fg-1)",
+            marginTop: 12, padding: "16px 18px", fontFamily: "var(--mono)",
+            fontSize: 11.5, lineHeight: 1.65, color: "var(--fg-1)",
             whiteSpace: "pre-wrap", overflowX: "auto", maxHeight: 620,
-            overflowY: "auto",
+            overflowY: "auto", minHeight: 220,
           }}
         >
-          {loading ? "loading…" : body}
+          {loading ? "generating…" : body}
         </pre>
 
-        <div className="disclaimer" style={{ marginTop: 18 }}>
+        <div className="disclaimer" style={{ marginTop: 22 }}>
           Decision support only. Not a warning product. IMD / RSMC New Delhi is
-          the responsible warning authority for the North Indian Ocean.
+          the responsible warning authority for the North Indian Ocean. The CAP
+          message is permanently status Exercise.
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

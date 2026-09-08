@@ -16,6 +16,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import Page, { Section } from "../components/Page";
 
 const INSTRUMENTS = [
   "insat-3d", "insat-3dr", "insat-3ds", "himawari-9", "goes-18",
@@ -76,22 +77,28 @@ export default function Upload() {
   };
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
-      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "22px 28px 44px" }}>
-        <h1 style={{ fontSize: 24, letterSpacing: "-0.02em" }}>
-          Bring your own data
-        </h1>
-        <p style={{ fontSize: 13, color: "var(--fg-2)", maxWidth: 760,
-                    lineHeight: 1.65, marginTop: 8 }}>
-          A generic entry point to the same harmonisation and inference pipeline,
-          for observations the system did not fetch itself, with an explicit
-          in-distribution check and an honest refusal when the input falls
-          outside the validated envelope.
-        </p>
-
+    <Page
+      eyebrow="Bring your own data"
+      title="Upload"
+      width={1060}
+      lede={
+        <>
+          A generic entry point to the same harmonisation and inference
+          pipeline, for observations the system did not fetch itself, with an
+          explicit in-distribution check and an honest refusal when the input
+          falls outside the validated envelope.
+        </>
+      }
+      actions={
+        <Link to="/methods" className="btn" style={{ textDecoration: "none" }}>
+          Validation and limits
+        </Link>
+      }
+    >
+      <div>
         <div style={{ display: "grid",
                       gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                      gap: 12, marginTop: 16 }}>
+                      gap: 12 }}>
           <Mode letter="A" title="Gridded imagery"
                 body="GeoTIFF or NetCDF with CRS metadata, or an .npz channel
                       stack. Full path: reproject, channel map, availability
@@ -116,8 +123,8 @@ export default function Upload() {
           onDrop={onDrop}
           className="panel"
           style={{
-            marginTop: 20, padding: "28px 20px", textAlign: "center",
-            borderStyle: "dashed",
+            marginTop: 20, padding: "36px 20px", textAlign: "center",
+            borderStyle: "dashed", borderWidth: 1.5,
             borderColor: dragging ? "var(--accent)" : "var(--line-strong)",
             background: dragging ? "var(--accent-glow)" : undefined,
             transition: "border-color var(--t-fast), background var(--t-fast)",
@@ -145,11 +152,8 @@ export default function Upload() {
             <label style={{ display: "flex", alignItems: "center", gap: 6,
                             fontSize: 12, color: "var(--fg-2)" }}>
               declared instrument
-              <select value={instrument} onChange={(e) => setInstrument(e.target.value)}
-                      style={{ background: "var(--bg-2)", color: "var(--fg)",
-                               border: "1px solid var(--line-strong)",
-                               borderRadius: "var(--r-sm)", padding: "4px 7px",
-                               fontSize: 12 }}>
+              <select value={instrument}
+                      onChange={(e) => setInstrument(e.target.value)}>
                 {INSTRUMENTS.map((i) => <option key={i} value={i}>{i}</option>)}
               </select>
             </label>
@@ -170,12 +174,9 @@ export default function Upload() {
         )}
 
         {/* ------------------------------------------------ the chain */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10,
-                      margin: "30px 0 8px" }}>
-          <h2 style={{ fontSize: 15 }}>The guardrail chain</h2>
-          <span className="hair" style={{ flex: 1 }} />
-        </div>
-        <div className="panel" style={{ padding: "6px 0" }}>
+        <Section title="The guardrail chain"
+                 note="every stage can refuse, and says why" />
+        <div className="panel ticked" style={{ padding: "6px 0" }}>
           {CHECKS.map(([key, title, body], i) => (
             <div key={key} style={{ display: "flex", gap: 12, padding: "10px 16px",
                                     borderBottom: i < CHECKS.length - 1
@@ -200,14 +201,14 @@ export default function Upload() {
           <Link to="/methods">Validation and limits →</Link>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }
 
 function Mode({ letter, title, body, accepts }: { letter: string; title: string;
                                                   body: string; accepts: string }) {
   return (
-    <div className="panel" style={{ padding: "12px 14px" }}>
+    <div className="panel ticked" style={{ padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span className="chip cls-O" style={{ flex: "none" }}>{letter}</span>
         <h3 style={{ fontSize: 13 }}>{title}</h3>

@@ -5,7 +5,7 @@
  * handles tiles and camera, deck.gl handles large scatterometer barb fields and
  * swath polygons at interactive frame rates.
  *
- * Three behaviours here are requirements rather than choices.
+ * Four behaviours here are requirements rather than choices.
  *
  * Each raster layer's tile URL carries the scrubber time, so the server resolves
  * that layer's own most recent granule at or before it. Nothing is interpolated
@@ -16,6 +16,11 @@
  * data layer is inserted beneath the `boundary-coast` layer by id. The coastline
  * is the most important line on this map, because it is where the regime changes
  * and the track keeps going, so it is never buried under a raster.
+ *
+ * The track is split at the scrubber position: the part the replay has reached
+ * is drawn solid, the part it has not is drawn faint. That is an observed-
+ * versus-not-yet-reached distinction and it is deliberately not called a
+ * forecast, because it is best-track the replay has simply not played yet.
  *
  * A watermark is drawn whenever any class D layer is on, and it is part of the
  * canvas rather than an overlay that could be scrolled away from.
@@ -28,7 +33,7 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { GeoJsonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 
 import { api, REGIME_COLOR, RISK_COLOR } from "../api/client";
-import type { DistrictRisk, StormState, Track } from "../api/types";
+import type { DistrictRisk, StormState, Track, TrackPoint } from "../api/types";
 import { useStore } from "../state/store";
 
 interface Props {
@@ -50,12 +55,11 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
   // Map readiness is state, not a ref, and that distinction is a bug fix.
   //
   // A ref does not re-run effects, so with a ref there was a race between the
-  // map's load event and the store hydrating from the URL. The load handler
+  // map becoming usable and the store hydrating from the URL: the handler
   // called syncRasters through the closure from the first render, where the
-  // storm and the scrubber time were still null, so it returned early; and if
-  // hydration had already happened by then, rasterKey never changed again and
-  // the effect never fired a second time. The result was a map with a
-  // coastline and a track and no raster layers at all.
+  // storm and the scrubber time were still null, so it returned early, and
+  // rasterKey never changed again. The result was a map with a coastline and a
+  // track and no raster layers at all.
   const [ready, setReady] = useState(false);
 
   const s = useStore();
@@ -152,7 +156,7 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
       Math.abs(m.getZoom() - s.zoom) > 1e-3;
     if (moved) {
       m.easeTo({ center: [s.lon, s.lat], zoom: s.zoom, bearing: s.bearing,
-                 pitch: s.pitch, duration: 620,
+                 pitch: s.pitch, duration: 720,
                  easing: (t) => 1 - Math.pow(1 - t, 3) });
     }
   }, [ready, s.lon, s.lat, s.zoom, s.bearing, s.pitch]);
@@ -201,7 +205,8 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
         m.addLayer(
           { id, type: "raster", source: id,
             paint: { "raster-opacity": s.opacity[l.id] ?? l.default_opacity,
-                     "raster-fade-duration": 180 } },
+                     "raster-fade-duration": 220,
+                     "raster-resampling": "linear" } },
           before,
         );
         // Opacity transitions are honoured at runtime but are not part of the
@@ -235,6 +240,8 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
 
     const layers: any[] = [];
     const activeIds = new Set(s.active);
+    const cutoff = s.at ? new Date(s.at).getTime() : Infinity;
+    const reached = (t: string) => new Date(t).getTime() <= cutoff;
 
     /* District rainfall risk. Categorical bands, never a continuous field. */
     if (activeIds.has("tri_district_risk") && risk && risk.districts.length) {
@@ -262,33 +269,49 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
       );
     }
 
-    /* The track, styled by regime.
+    /* The track, styled by regime and split at the scrubber.
      *
      * This is the most important thing on the map. The point where the style
      * changes at the coastline, and continues rather than stopping, is the
      * land-sea transition made visible. */
     if (track && (activeIds.has("tri_regime_segments") || activeIds.has("tri_track_intensity"))) {
+      const features = track.regime_segments.map((seg) => ({
+        type: "Feature" as const,
+        properties: { regime: seg.regime, start: seg.start_time,
+                      reached: reached(seg.start_time) },
+        geometry: { type: "LineString" as const, coordinates: seg.points },
+      }));
+
+      // A wide, low-alpha pass underneath the track reads as a glow at every
+      // zoom without a shader, and it is what keeps a 3 px line legible over a
+      // bright infrared field.
       layers.push(
         new GeoJsonLayer({
+          id: "track-glow",
+          data: { type: "FeatureCollection", features } as any,
+          stroked: true,
+          filled: false,
+          lineWidthUnits: "pixels",
+          getLineWidth: 9,
+          getLineColor: (f: any) => {
+            const c = hexToRgb(REGIME_COLOR[f.properties.regime] ?? "#38bdf8");
+            return [c[0], c[1], c[2], f.properties.reached ? 46 : 14];
+          },
+          updateTriggers: { getLineColor: [track.storm_id, s.at] },
+        }),
+        new GeoJsonLayer({
           id: "track-regime",
-          data: {
-            type: "FeatureCollection",
-            features: track.regime_segments.map((seg) => ({
-              type: "Feature",
-              properties: { regime: seg.regime, start: seg.start_time },
-              geometry: { type: "LineString", coordinates: seg.points },
-            })),
-          } as any,
+          data: { type: "FeatureCollection", features } as any,
           pickable: true,
           stroked: true,
           filled: false,
           lineWidthUnits: "pixels",
-          getLineWidth: 3.2,
+          getLineWidth: 2.8,
           getLineColor: (f: any) => {
             const c = hexToRgb(REGIME_COLOR[f.properties.regime] ?? "#38bdf8");
-            return [c[0], c[1], c[2], 235];
+            return [c[0], c[1], c[2], f.properties.reached ? 240 : 72];
           },
-          updateTriggers: { getLineColor: [track.storm_id] },
+          updateTriggers: { getLineColor: [track.storm_id, s.at] },
         }),
       );
 
@@ -301,16 +324,18 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
           data: track.points,
           pickable: true,
           radiusUnits: "pixels",
-          getPosition: (d: any) => [d.lon, d.lat],
-          getRadius: (d: any) => 2.2 + Math.sqrt(Math.max(d.vmax_kt ?? 0, 0)) * 0.42,
-          getFillColor: (d: any) => {
+          getPosition: (d: TrackPoint) => [d.lon, d.lat],
+          getRadius: (d: TrackPoint) =>
+            2 + Math.sqrt(Math.max(d.vmax_kt ?? 0, 0)) * 0.4,
+          getFillColor: (d: TrackPoint) => {
             const c = hexToRgb(REGIME_COLOR[d.regime] ?? "#38bdf8");
-            return [c[0], c[1], c[2], 210];
+            return [c[0], c[1], c[2], reached(d.valid_time) ? 225 : 62];
           },
-          getLineColor: [8, 12, 18, 220],
+          getLineColor: [5, 8, 12, 220],
           lineWidthUnits: "pixels",
-          getLineWidth: 0.7,
+          getLineWidth: 0.8,
           stroked: true,
+          updateTriggers: { getFillColor: [s.at] },
         }),
       );
     }
@@ -379,6 +404,22 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
     if (state) {
       const spread = state.disagreement.spread_kt ?? 0;
       layers.push(
+        // A soft disc well outside the marker, so the eye finds the current fix
+        // immediately even against a bright infrared field.
+        new ScatterplotLayer({
+          id: "storm-beacon",
+          data: [state],
+          radiusUnits: "pixels",
+          getPosition: (d: StormState) => [d.centre.lon, d.centre.lat],
+          getRadius: 26,
+          filled: true,
+          stroked: false,
+          getFillColor: state.disagreement.above_threshold
+            ? [248, 113, 113, 28]
+            : [79, 224, 207, 28],
+          transitions: { getPosition: 420 },
+          updateTriggers: { getFillColor: [state.disagreement.above_threshold] },
+        }),
         new ScatterplotLayer({
           id: "storm-halo",
           data: [state],
@@ -388,10 +429,10 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
           filled: false,
           stroked: true,
           getLineColor: state.disagreement.above_threshold
-            ? [248, 113, 113, 225]
-            : [106, 169, 255, 170],
+            ? [248, 113, 113, 235]
+            : [143, 245, 230, 205],
           lineWidthUnits: "pixels",
-          getLineWidth: Math.min(1 + spread * 0.55, 7),
+          getLineWidth: Math.min(1.2 + spread * 0.55, 7),
           updateTriggers: { getLineWidth: [spread], getLineColor: [spread] },
           transitions: { getPosition: 420, getLineWidth: 320 },
         }),
@@ -402,7 +443,11 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
           getPosition: (d: StormState) => [d.centre.lon, d.centre.lat],
           getRadius: 4.5,
           filled: true,
-          getFillColor: [232, 238, 246, 250],
+          stroked: true,
+          getLineColor: [5, 8, 12, 230],
+          lineWidthUnits: "pixels",
+          getLineWidth: 1.2,
+          getFillColor: [240, 250, 252, 252],
           transitions: { getPosition: 420 },
         }),
         new TextLayer({
@@ -410,16 +455,17 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
           data: [state],
           getPosition: (d: StormState) => [d.centre.lon, d.centre.lat],
           getText: (d: StormState) =>
-            `${d.name.toUpperCase()}  ${d.intensity.vmax_kt?.toFixed(0) ?? "--"} kt`,
-          getSize: 10.5,
-          getColor: [232, 238, 246, 235],
-          getPixelOffset: [0, -22],
+            `${d.name.toUpperCase()}  ${d.intensity.vmax_kt?.toFixed(0) ?? "--"} KT`,
+          getSize: 11,
+          getColor: [236, 246, 250, 240],
+          getPixelOffset: [0, -30],
           fontFamily: "ui-monospace, monospace",
           characterSet: "auto",
           getTextAnchor: "middle",
-          outlineWidth: 3,
-          outlineColor: [7, 10, 16, 255],
+          outlineWidth: 4,
+          outlineColor: [4, 6, 10, 255],
           fontSettings: { sdf: true },
+          transitions: { getPosition: 420 },
         }),
       );
     }
@@ -439,27 +485,34 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
     <div style={{ position: "absolute", inset: 0 }}>
       <div ref={holder} style={{ position: "absolute", inset: 0 }} />
 
+      {/* A vignette, so the floating panels have a darker ground to sit on at
+          the edges without the middle of the map being dimmed. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 76% 72% at 50% 46%, transparent 44%, " +
+            "rgba(3,5,8,0.62) 100%)",
+        }}
+      />
+
       {/* Persistent watermark whenever any derived layer is active. Part of the
           map, always visible, and not dismissible. */}
       {derivedActive && (
         <div
           className="fade"
           style={{
-            position: "absolute", right: 14, bottom: 74, pointerEvents: "none",
+            position: "absolute", right: 16, bottom: 96, pointerEvents: "none",
             fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.18em",
-            color: "var(--class-d)", opacity: 0.7, textAlign: "right",
+            color: "var(--class-d)", opacity: 0.6, textAlign: "right",
             textShadow: "0 1px 3px rgba(0,0,0,0.9)",
           }}
         >
-          <div style={{ fontSize: 13, letterSpacing: "0.24em" }}>TRINETRA</div>
+          <div style={{ fontSize: 13, letterSpacing: "0.26em" }}>TRINETRA</div>
           <div>DERIVED LAYER ACTIVE</div>
         </div>
       )}
-
-      {/* Crosshair rules, from the reference footage. Purely visual, and they
-          give the eye a horizon in a dark floating layout. */}
-      <div className="rule-h" style={{ top: "50%", opacity: 0.35 }} />
-      <div className="rule-v" style={{ left: "50%", opacity: 0.35 }} />
     </div>
   );
 }

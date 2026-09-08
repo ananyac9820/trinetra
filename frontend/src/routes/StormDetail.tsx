@@ -21,6 +21,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, formatUtc, num, REGIME_COLOR, REGIME_LABEL } from "../api/client";
 import type { Analogue, Evidence, StormState, Track } from "../api/types";
 import Series from "../components/Series";
+import Page, { Section as PageSection } from "../components/Page";
 
 export default function StormDetail() {
   const { id = "" } = useParams();
@@ -46,7 +47,11 @@ export default function StormDetail() {
   }, [id, at]);
 
   if (!state) {
-    return <div style={{ padding: 24 }}><span className="tele">loading…</span></div>;
+    return (
+      <Page eyebrow="Storm detail" title="Loading system…">
+        <div className="tele">running inference at the requested time…</div>
+      </Page>
+    );
   }
 
   const i = state.intensity;
@@ -54,37 +59,49 @@ export default function StormDetail() {
   const d = state.disagreement;
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "22px 28px 40px" }}>
-        {/* header */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12,
-                      flexWrap: "wrap" }}>
-          <h1 style={{ fontSize: 24, letterSpacing: "-0.02em" }}>{state.name}</h1>
-          <span style={{ fontSize: 14, color: "var(--fg-1)" }}>
-            {c.imd_category_label ?? c.imd_category ?? "unclassified"}
-          </span>
-          <span className="tele">{state.storm_id}</span>
-          <span style={{ flex: 1 }} />
+    <Page
+      eyebrow={
+        <>
+          {c.imd_category_label ?? c.imd_category ?? "unclassified"} ·{" "}
+          {state.storm_id}
+        </>
+      }
+      title={state.name}
+      width={1180}
+      lede={
+        <>
+          Evidence for the estimate at {formatUtc(state.valid_time)}. The
+          Explorer answers where and what; this page answers why, and how much
+          the answer should be trusted.
+        </>
+      }
+      meta={
+        <span className="tele">
+          {state.tier} tier · model {state.provenance.model_version} · inference{" "}
+          {state.provenance.inference_id.slice(0, 12)}
+        </span>
+      }
+      actions={
+        <>
           <Link to={`/explorer?storm=${state.storm_id}&at=${encodeURIComponent(
-            state.valid_time)}`} className="btn" style={{ textDecoration: "none" }}>
+            state.valid_time)}`} className="btn primary"
+            style={{ textDecoration: "none" }}>
             Open in Explorer
           </Link>
           <Link to={`/storm/${state.storm_id}/report?at=${encodeURIComponent(
             state.valid_time)}`} className="btn" style={{ textDecoration: "none" }}>
             Operational outputs
           </Link>
-        </div>
-        <div className="tele" style={{ marginTop: 4 }}>
-          {formatUtc(state.valid_time)} · {state.tier} tier · model{" "}
-          {state.provenance.model_version}
-        </div>
-
+        </>
+      }
+    >
+      <div>
         {/* current state */}
         <div
-          className="panel stagger"
-          style={{ marginTop: 16, padding: "14px 16px", display: "grid",
+          className="panel ticked stagger"
+          style={{ padding: "18px 20px", display: "grid",
                    gridTemplateColumns: "repeat(auto-fit, minmax(168px, 1fr))",
-                   gap: 14 }}
+                   gap: 18 }}
         >
           <Big label="Current intensity"
                value={i.vmax_kt === null ? "not issued" : i.vmax_kt.toFixed(0)}
@@ -117,7 +134,7 @@ export default function StormDetail() {
 
         {/* RI */}
         <Section title="Rapid intensification, 24 hours" />
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           {state.ri.issued && state.ri.p24 !== null ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -164,7 +181,7 @@ export default function StormDetail() {
 
         {/* evidence */}
         <Section title="Evidence" note={evidence?.method} />
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           {evidence?.available ? (
             <>
               <p style={{ fontSize: 11.5, color: "var(--fg-2)", lineHeight: 1.6,
@@ -229,7 +246,7 @@ export default function StormDetail() {
 
         {/* time series */}
         <Section title="Time series" note="shared axis" />
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           {track && (
             <Series
               track={track}
@@ -242,7 +259,7 @@ export default function StormDetail() {
 
         {/* disagreement */}
         <Section title="Disagreement" note={d.baseline_name} />
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
             <Big label="TRINETRA" value={num(d.trinetra_kt, 0)} unit="kt" />
             <Big label="Baseline" value={num(d.baseline_kt, 0)} unit="kt" />
@@ -276,7 +293,7 @@ export default function StormDetail() {
 
         {/* analogues */}
         <Section title="Closest historical analogues" />
-        <div className="panel" style={{ padding: "14px 16px" }}>
+        <div className="panel ticked" style={{ padding: "16px 18px" }}>
           {analogues.length ? (
             <>
               <div className="scroll-x">
@@ -334,7 +351,7 @@ export default function StormDetail() {
         {state.abstentions.length > 0 && (
           <>
             <Section title="Abstentions" note={`${state.abstentions.length} head(s) declined`} />
-            <div className="panel" style={{ padding: "14px 16px" }}>
+            <div className="panel ticked" style={{ padding: "16px 18px" }}>
               {state.abstentions.map((a, k) => (
                 <div key={k} style={{ marginBottom: 10 }}>
                   <div className="tele" style={{ color: "var(--warn)" }}>{a.head}</div>
@@ -349,7 +366,7 @@ export default function StormDetail() {
 
         {/* environment, with provenance per feature */}
         <Section title="Environmental predictors" note="provenance per feature" />
-        <div className="panel scroll-x" style={{ padding: "4px 0" }}>
+        <div className="panel scroll-x" style={{ padding: "2px 0" }}>
           <table className="data">
             <thead>
               <tr>
@@ -393,19 +410,12 @@ export default function StormDetail() {
           <Link to="/methods">Validation and limits →</Link>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }
 
 function Section({ title, note }: { title: string; note?: string | null }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 10,
-                  margin: "26px 0 8px" }}>
-      <h2 style={{ fontSize: 14 }}>{title}</h2>
-      {note && <span className="tele">{note}</span>}
-      <span className="hair" style={{ flex: 1 }} />
-    </div>
-  );
+  return <PageSection title={title} note={note ?? undefined} />;
 }
 
 function Big({ label, value, unit, sub, colour }: {

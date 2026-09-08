@@ -6,6 +6,11 @@
  * landing page makes both worse: the landing page needs to load fast and orient
  * a stranger, and the Explorer needs to be a workspace.
  *
+ * The shell has two forms. On document pages it is a bar with a rule under it.
+ * On the Explorer it floats: the map runs edge to edge underneath and the
+ * chrome is a translucent pill over it, because on a map-first surface a solid
+ * header is a strip of viewport that shows no data.
+ *
  * The mode badge is in the shell rather than in the Explorer, because it must
  * be visible in every viewport at every size, including fullscreen, and it must
  * never be hidden.
@@ -33,6 +38,20 @@ const NAV = [
   { to: "/methods", label: "Methods" },
 ];
 
+export function Mark({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
+      <circle cx="16" cy="16" r="13.5" fill="none" stroke="var(--accent)"
+              strokeWidth="1.4" opacity="0.9" />
+      <ellipse cx="16" cy="16" rx="13.5" ry="5" fill="none"
+               stroke="var(--accent-dim)" strokeWidth="1" />
+      <ellipse cx="16" cy="16" rx="5" ry="13.5" fill="none"
+               stroke="var(--accent-dim)" strokeWidth="1" opacity="0.5" />
+      <circle cx="16" cy="16" r="3.2" fill="var(--accent)" />
+    </svg>
+  );
+}
+
 export default function App() {
   const setManifest = useStore((s) => s.setManifest);
   const set = useStore((s) => s.set);
@@ -48,41 +67,59 @@ export default function App() {
   }, [setManifest, set]);
 
   const isExplorer = location.pathname.startsWith("/explorer");
+  const isLanding = location.pathname === "/";
+  const floating = isExplorer || isLanding;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%",
-                  minHeight: 0 }}>
+                  minHeight: 0, position: "relative" }}>
       <header
         style={{
-          display: "flex", alignItems: "center", gap: 16,
-          padding: "0 14px", height: 42, flex: "none",
-          borderBottom: "1px solid var(--line)",
-          background: "var(--bg-1)", position: "relative", zIndex: 20,
+          display: "flex", alignItems: "center", gap: 18,
+          padding: floating ? "0 18px" : "0 20px",
+          height: "var(--chrome-h)",
+          flex: "none",
+          borderBottom: floating ? "1px solid transparent" : "1px solid var(--line)",
+          background: floating ? "transparent" : "rgba(7,10,16,0.86)",
+          backdropFilter: floating ? "none" : "var(--glass-blur)",
+          position: floating ? "absolute" : "relative",
+          top: 0, left: 0, right: 0,
+          zIndex: 40,
+          pointerEvents: "none",
         }}
       >
+        {/* On a floating shell every cluster carries its own glass, so the
+            chrome stays readable over whatever scrolls beneath it rather than
+            needing an opaque bar across the whole viewport. */}
         <Link
           to="/"
+          className={floating ? "glass" : undefined}
           style={{
-            display: "flex", alignItems: "center", gap: 8,
-            textDecoration: "none", color: "var(--fg)",
+            display: "flex", alignItems: "center", gap: 9,
+            textDecoration: "none", color: "var(--fg)", pointerEvents: "auto",
+            padding: floating ? "7px 15px" : 0,
+            borderRadius: "var(--r-pill)",
           }}
         >
-          <svg width="17" height="17" viewBox="0 0 32 32" aria-hidden>
-            <circle cx="16" cy="16" r="13.5" fill="none" stroke="var(--accent)"
-                    strokeWidth="1.4" />
-            <ellipse cx="16" cy="16" rx="13.5" ry="5" fill="none"
-                     stroke="var(--accent-dim)" strokeWidth="1" />
-            <circle cx="16" cy="16" r="3.4" fill="var(--accent)" />
-          </svg>
+          <Mark size={19} />
           <span
             style={{ fontFamily: "var(--mono)", fontSize: 13.5,
-                     letterSpacing: "0.22em", fontWeight: 500 }}
+                     letterSpacing: "0.26em", fontWeight: 500 }}
           >
             TRINETRA
           </span>
         </Link>
 
-        <nav style={{ display: "flex", gap: 2 }}>
+        <nav
+          className={floating ? "glass" : undefined}
+          style={{
+            display: "flex", gap: 2, pointerEvents: "auto",
+            padding: floating ? 3 : 0,
+            borderRadius: "var(--r-pill)",
+            ...(floating ? {} : { border: 0, background: "transparent",
+                                  boxShadow: "none" }),
+          }}
+        >
           {NAV.map((n) => {
             const on = location.pathname.startsWith(n.to);
             return (
@@ -90,7 +127,8 @@ export default function App() {
                 key={n.to}
                 to={n.to}
                 style={{
-                  padding: "4px 9px", borderRadius: "var(--r-sm)",
+                  padding: floating ? "5px 14px" : "5px 11px",
+                  borderRadius: "var(--r-pill)",
                   fontSize: 12, textDecoration: "none",
                   color: on ? "var(--accent)" : "var(--fg-2)",
                   background: on ? "var(--accent-glow)" : "transparent",
@@ -105,17 +143,33 @@ export default function App() {
 
         <span style={{ flex: 1 }} />
 
-        <span className="tele" style={{ display: isExplorer ? "none" : "inline" }}>
-          North Indian Ocean
-        </span>
-        <ModeBadge />
+        <div
+          className={floating ? "glass" : undefined}
+          style={{
+            display: "flex", alignItems: "center", gap: 12,
+            pointerEvents: "auto",
+            padding: floating ? "5px 10px 5px 14px" : 0,
+            borderRadius: "var(--r-pill)",
+          }}
+        >
+          <span className="tele" style={{ display: isExplorer ? "none" : "inline" }}>
+            North Indian Ocean
+          </span>
+          <ModeBadge />
+        </div>
       </header>
 
-      <main style={{ flex: 1, minHeight: 0, position: "relative" }}>
+      <main
+        style={{
+          flex: 1, minHeight: 0, position: "relative",
+          ...(floating ? { position: "absolute", inset: 0 } : {}),
+        }}
+      >
         <Suspense
           fallback={
-            <div style={{ padding: 24 }}>
-              <span className="tele">loading…</span>
+            <div style={{ position: "absolute", inset: 0, display: "grid",
+                          placeItems: "center" }}>
+              <span className="tele fade">initialising…</span>
             </div>
           }
         >
