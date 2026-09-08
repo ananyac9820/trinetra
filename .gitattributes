@@ -1,0 +1,3 @@
+# Keep the committed vector layers byte-identical to the upstream files.
+# Without this, core.autocrlf rewrites 8 MB of GeoJSON line endings on checkout.
+*.geojson -text

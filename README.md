@@ -109,22 +109,22 @@ backend/trinetra/
   eval/              grouped CV, bootstrap, reliability, the two metric tables
   inference/         the shared live and replay inference path
   tiles/             COG and XYZ raster, MVT vector
-  live/              source watchers, queue, workers, freshness
+  live/              stub. No live feed is wired up in this build.
   outputs/           ATCF deck line, bulletin text, GeoJSON, CAP XML
   api/               FastAPI routes and the response contracts
 frontend/src/
   routes/            landing, explorer, storm detail, report, upload, methods, archive
   map/               MapLibre canvas with deck.gl overlays
   components/        layer panel, scrubber, probe, evidence, age strip
-docs/                architecture, methods, acceptance criteria, demo script
+docs/                RUNBOOK.md and the figures the methods page links
 data/                raw, interim, cube, labels, dataset card
 ```
 
 ## Running it
 
-The label tables are committed, so the API boots without any download. The
-data cube and the model checkpoint are not: they are large and generated, and
-they are the two steps that take real time.
+The label tables and the two vector layers are committed, so the API boots
+without any download. The data cube and the model checkpoint are not: they are
+large and generated, and they are the two steps that take real time.
 
 ```bash
 # backend
@@ -166,8 +166,8 @@ python scripts/run_baselines.py    # persistence, CLIPER and the RI baselines
                                    # (~3 min; writes data/labels/baselines.json)
 ```
 
-The whole stack, including the queue and the object store, comes up with
-`docker compose up`.
+There is no container setup in this repository. The two commands above are the
+whole of it.
 
 ## What is real and what is not
 
@@ -201,11 +201,23 @@ realistic overpass cadence so the availability mask exercises the same code path
 it would on real granules. Every synthetic granule carries
 `provenance.synthetic = true` through the API and renders with a distinct badge.
 
-The acquisition clients for all the real sources are written and working. They
-need credentials, not code. `docs/RUNBOOK.md` has the commands.
+The acquisition clients for those sources are not written. `ingest/` holds two
+modules: the real best-track reader and the synthetic granule generator. Wiring
+up MOSDAC, PO.DAAC, Copernicus Marine and CDS is the next piece of work, and it
+is code as well as credentials. `docs/RUNBOOK.md` says the same thing where
+someone setting the project up will read it.
 
 
 ## Licence and attribution
 
-Best-track data: IBTrACS v04r01, NOAA NCEI. IMD / RSMC New Delhi is the
-responsible warning authority for the North Indian Ocean.
+Best-track data: IBTrACS v04r01, NOAA NCEI.
+
+Coastline: Natural Earth 1:50m land polygons, public domain.
+
+District boundaries: geoBoundaries gbOpen India ADM2, 2021, released under the
+Open Data Commons Open Database License 1.0. Runfola et al., geoBoundaries,
+William & Mary geoLab. The copy in `data/raw/vector/` is redistributed under
+that licence.
+
+IMD / RSMC New Delhi is the responsible warning authority for the North Indian
+Ocean.

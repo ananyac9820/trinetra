@@ -1,6 +1,18 @@
 # data — raw archives are large and reproducible from the runbook
 data/raw/**
 !data/raw/.gitkeep
+
+# Except the two open vector layers the API cannot start without. Natural Earth
+# land gives the coastline and the land-mask channel; geoBoundaries gbOpen ADM2
+# gives the 735 districts the impact choropleth and the location probe need.
+# Natural Earth is public domain and geoBoundaries gbOpen is ODbL 1.0, which
+# the attribution section of the README carries. Together they are 9.6 MB, a
+# smaller price than a clean clone that 500s on every state request because a
+# download step was skipped. docs/RUNBOOK.md has the fetch commands for anyone
+# who would rather re-pull them.
+!data/raw/vector/
+!data/raw/vector/ne_50m_land.geojson
+!data/raw/vector/districts_ind_adm2.geojson
 data/cube/*.zarr/
 data/cube/*.npz
 data/interim/*.parquet
