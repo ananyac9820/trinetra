@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { formatUtc, formatUtcShort, REGIME_COLOR } from "../api/client";
+import { REGIME_PLAIN } from "../api/plain";
 import type { Track } from "../api/types";
 import { useStore } from "../state/store";
 
@@ -150,44 +151,75 @@ export default function TimeScrubber({ track }: Props) {
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+      {/* The transport row, laid out the way a media player is: controls on
+          the left, the time this view is showing in the middle at the largest
+          size on the bar, view options on the right. The time is the single
+          most important thing here — everything on the map is an answer to
+          "at this moment" — so it is centred and set large. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8,
+                    marginBottom: 9 }}>
         <button
           onClick={() => set({ playing: !playing })}
           className={playing ? "active" : undefined}
-          title="space"
+          title="Play or pause (spacebar)"
           aria-label={playing ? "pause" : "play"}
           style={{
-            width: 34, height: 30, padding: 0, borderRadius: "var(--r-pill)",
-            fontFamily: "var(--mono)", fontSize: 12,
-            ...(playing ? {} : { color: "var(--accent-ink)",
-                                 background: "linear-gradient(180deg, var(--accent-2), var(--accent))",
-                                 borderColor: "transparent" }),
+            width: 36, height: 32, padding: 0, borderRadius: "var(--r-pill)",
+            fontFamily: "var(--mono)", fontSize: 12, flex: "none",
+            ...(playing ? {} : {
+              color: "var(--accent-ink)",
+              background: "linear-gradient(180deg, var(--accent-2), var(--accent))",
+              borderColor: "transparent",
+            }),
           }}
         >
           {playing ? "❙❙" : "▶"}
         </button>
         <button onClick={() => { set({ playing: false }); goTo(index - 1); }}
-                title="left arrow: step back one inference step"
+                title="Step back one observation (left arrow)"
                 aria-label="step back"
                 className="icon-btn">
           ◀
         </button>
         <button onClick={() => { set({ playing: false }); goTo(index + 1); }}
-                title="right arrow: step forward one inference step"
+                title="Step forward one observation (right arrow)"
                 aria-label="step forward"
                 className="icon-btn">
           ▶
         </button>
 
-        <div style={{ display: "flex", gap: 3, marginLeft: 2 }}>
+        <span style={{ flex: 1 }} />
+
+        <div style={{ textAlign: "center", minWidth: 0 }}>
+          <div className="num" style={{ fontSize: 15, color: "var(--fg)",
+                                        letterSpacing: "-0.015em" }}>
+            {formatUtc(current.valid_time)}
+          </div>
+          <div className="tele" style={{ marginTop: 2 }}>
+            Observation {index + 1} of {points.length}
+            {current.regime && (
+              <>
+                {" · "}
+                <span style={{ color: REGIME_COLOR[current.regime] }}>
+                  {REGIME_PLAIN[current.regime] ??
+                    current.regime.replace(/_/g, " ")}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <span style={{ flex: 1 }} />
+
+        <div style={{ display: "flex", gap: 3, flex: "none" }}>
           {SPEEDS.map((sp) => (
             <button
               key={sp}
               className={speed === sp ? "active" : undefined}
               onClick={() => set({ speed: sp })}
-              title="playback advances the inference index, not wall-clock seconds"
-              style={{ padding: "4px 9px", fontFamily: "var(--mono)", fontSize: 11,
-                       borderRadius: "var(--r-pill)" }}
+              title="How fast playback steps through the observations. It advances one observation at a time, not a fixed number of seconds."
+              style={{ padding: "4px 9px", fontFamily: "var(--mono)",
+                       fontSize: 11, borderRadius: "var(--r-pill)" }}
             >
               {sp}×
             </button>
@@ -197,36 +229,17 @@ export default function TimeScrubber({ track }: Props) {
         <button
           className={follow ? "active" : undefined}
           onClick={() => set({ follow: !follow })}
-          title="F: lock the viewport to the moving centre. On by default, because the imagery is a storm-centred cube and an unlocked viewport loses it within a few steps."
-          style={{ padding: "4px 12px", fontSize: 11, borderRadius: "var(--r-pill)" }}
+          title="Keep the map centred on the storm as time advances (F). On by default: the satellite imagery only covers a box around the storm, so an unlocked view loses it within a few steps."
+          style={{ padding: "4px 12px", fontSize: 11, flex: "none",
+                   borderRadius: "var(--r-pill)" }}
         >
-          Follow
+          Follow storm
         </button>
-
-        <span style={{ flex: 1 }} />
-
-        <div style={{ textAlign: "right" }}>
-          <div className="num" style={{ fontSize: 13.5, color: "var(--fg)",
-                                        letterSpacing: "-0.01em" }}>
-            {formatUtc(current.valid_time)}
-          </div>
-          <div className="tele">
-            step {index + 1} of {points.length}
-            {current.regime && (
-              <>
-                {" · "}
-                <span style={{ color: REGIME_COLOR[current.regime] }}>
-                  {current.regime.replace(/_/g, " ")}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* The axis. */}
       <div style={{ position: "relative", height: 32 }}>
-        {/* Regime bands behind the axis, so the land-sea transition is visible
+        {/* Phase bands behind the axis, so the land-sea transition is visible
             on the timeline as well as on the map. */}
         <div style={{ position: "absolute", left: 0, right: 0, top: 5, height: 7,
                       borderRadius: 4, overflow: "hidden",
@@ -239,46 +252,38 @@ export default function TimeScrubber({ track }: Props) {
                 key={i}
                 className="sweep"
                 style={{
-                  position: "absolute", left: `${a}%`, width: `${Math.max(b - a, 0.6)}%`,
-                  top: 0, bottom: 0,
+                  position: "absolute", left: `${a}%`,
+                  width: `${Math.max(b - a, 0.6)}%`, top: 0, bottom: 0,
                   background: REGIME_COLOR[seg.regime] ?? "var(--accent)",
-                  opacity: 0.75,
+                  opacity: 0.78,
                   animationDelay: `${i * 70}ms`,
                 }}
-                title={seg.regime.replace(/_/g, " ")}
+                title={REGIME_PLAIN[seg.regime] ?? seg.regime.replace(/_/g, " ")}
               />
             );
           })}
         </div>
 
-        {/* Progress to the current position. */}
-        <div
-          style={{
-            position: "absolute", left: 0, top: 6, height: 5,
-            width: `${pct(current.valid_time)}%`,
-            borderRadius: 3,
-            background: "linear-gradient(90deg, transparent, var(--accent-glow))",
-            pointerEvents: "none",
-          }}
-        />
-
         {/* Landfall marker. */}
         {track!.landfall_index !== null && points[track!.landfall_index!] && (
           <div
-            title="coastline crossing"
+            title="Crossed the coast"
             style={{
-              position: "absolute", left: `${pct(points[track!.landfall_index!].valid_time)}%`,
+              position: "absolute",
+              left: `${pct(points[track!.landfall_index!].valid_time)}%`,
               top: 0, bottom: 12, width: 1.5,
               background: "var(--regime-overland)", opacity: 0.9,
             }}
           />
         )}
 
-        {/* IMD bulletin ticks. The gap between them is the argument. */}
+        {/* IMD bulletin ticks. The gap between them is the argument: official
+            bulletins are three to six hourly, and everything between two ticks
+            is a window nothing official covers. */}
         {bulletins.map((b, i) => (
           <div
             key={i}
-            title={`IMD bulletin ${formatUtcShort(b)}`}
+            title={`Official IMD bulletin issued ${formatUtcShort(b)}`}
             style={{
               position: "absolute", left: `${pct(b)}%`, top: 15, height: 6,
               width: 1, background: "var(--fg-3)", opacity: 0.8,
@@ -293,7 +298,7 @@ export default function TimeScrubber({ track }: Props) {
           step={1}
           value={index}
           onChange={(e) => { set({ playing: false }); goTo(Number(e.target.value)); }}
-          aria-label="time"
+          aria-label="Time"
           style={{
             position: "absolute", left: 0, right: 0, top: 2, width: "100%",
             background: "transparent", height: 13, cursor: "pointer",
@@ -311,7 +316,7 @@ export default function TimeScrubber({ track }: Props) {
                    transform: "translateX(-50%)" }}
           className="tele"
         >
-          IMD bulletins ▏ ticks
+          ▏ ticks are official IMD bulletins
         </div>
       </div>
     </div>

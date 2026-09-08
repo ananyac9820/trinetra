@@ -28,6 +28,7 @@ import { useSearchParams } from "react-router-dom";
 import MapCanvas from "../map/MapCanvas";
 import ChannelAgeStrip from "../components/ChannelAgeStrip";
 import LayerPanel from "../components/LayerPanel";
+import MapLegend from "../components/MapLegend";
 import Probe from "../components/Probe";
 import SidePanel from "../components/SidePanel";
 import StormPicker from "../components/StormPicker";
@@ -60,6 +61,7 @@ export default function Explorer() {
   const [rightOpen, setRightOpen] = useState(true);
   const [copied, setCopied] = useState(false);
   const [trackError, setTrackError] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<{ lat: number; lon: number } | null>(null);
   const hydrated = useRef(false);
 
   /* Hydrate from the URL exactly once, before anything else writes to it.
@@ -211,7 +213,13 @@ export default function Explorer() {
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
       {/* The map is the ground. Everything else floats on it. */}
-      <MapCanvas track={track} state={state} risk={risk} onProbe={onProbe} />
+      <MapCanvas
+        track={track}
+        state={state}
+        risk={risk}
+        onProbe={onProbe}
+        onHover={(lat, lon) => setCursor({ lat, lon })}
+      />
 
       {/* ------------------------------------------------- top command row */}
       <div
@@ -266,15 +274,31 @@ export default function Explorer() {
 
         <span style={{ flex: 1 }} />
 
-        <div style={{ display: "flex", gap: 6, pointerEvents: "auto" }}>
+        <div style={{ display: "flex", gap: 6, pointerEvents: "auto",
+                      alignItems: "center" }}>
+          {/* Where the cursor is, the way a chart tool shows a readout. It
+              costs nothing and it answers "what am I looking at" before the
+              user has clicked anything. */}
+          <span
+            className="glass num"
+            style={{
+              fontSize: 10.5, padding: "6px 12px",
+              borderRadius: "var(--r-pill)", color: "var(--fg-2)",
+              minWidth: 132, textAlign: "center",
+            }}
+          >
+            {cursor
+              ? `${cursor.lat.toFixed(2)}°N  ${cursor.lon.toFixed(2)}°E`
+              : "--.--°N  --.--°E"}
+          </span>
           <button
             onClick={copyPermalink}
             className="glass pill"
             style={{ fontSize: 11, padding: "6px 14px",
                      color: copied ? "var(--accent)" : undefined }}
-            title="The full view state is in the URL. Pasting it into a fresh browser reproduces this exact view."
+            title="The whole view is in the address bar. Paste that link anywhere and it opens on exactly this view."
           >
-            {copied ? "Link copied" : "Copy permalink"}
+            {copied ? "Link copied" : "Copy link to this view"}
           </button>
         </div>
       </div>
@@ -287,7 +311,7 @@ export default function Explorer() {
         onToggle={() => setLeftOpen((v) => !v)}
         label="Layers"
       >
-        <LayerPanel freshness={freshness} />
+        <LayerPanel freshness={freshness} onClose={() => setLeftOpen(false)} />
       </PanelShell>
 
       {/* ------------------------------------------------------ right panel */}
@@ -345,6 +369,17 @@ export default function Explorer() {
         <div className="glass" style={{ pointerEvents: "auto", padding: "10px 14px 12px" }}>
           <TimeScrubber track={track} />
         </div>
+      </div>
+
+      {/* --------------------------------------------------------- legend */}
+      <div
+        style={{
+          position: "absolute", right: rightOpen ? RIGHT_W + 26 : 60, bottom: 158,
+          zIndex: 19,
+          transition: "right var(--t) var(--ease-out)",
+        }}
+      >
+        <MapLegend />
       </div>
 
       {/* ------------------------------------------------- channel age strip */}
