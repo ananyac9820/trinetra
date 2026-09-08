@@ -82,6 +82,21 @@ def _r(x, n: int = 2):
     return round(float(x), n)
 
 
+def utc_naive(ts) -> pd.Timestamp:
+    """Coerce a timestamp to the tz-naive UTC everything inside TRINETRA uses.
+
+    The cube index, the best-track table and the clock are all tz-naive and
+    understood to be UTC. Anything arriving from an HTTP query string carries a
+    Z suffix and parses as tz-aware, and pandas refuses to compare or subtract
+    the two. Every entry point that accepts a caller-supplied time runs it
+    through here.
+    """
+    t = pd.Timestamp(ts)
+    if t.tzinfo is not None:
+        t = t.tz_convert("UTC").tz_localize(None)
+    return t
+
+
 class InferenceEngine:
     """Holds the model and the archive, and answers state queries."""
 
@@ -187,7 +202,8 @@ class InferenceEngine:
         sid = self.resolve(storm_id)
         track = self._tracks[sid]
         mode = mode or self.mode
-        at = pd.Timestamp(at) if at is not None else pd.Timestamp(track["valid_time"].max())
+        at = (utc_naive(at) if at is not None
+              else pd.Timestamp(track["valid_time"].max()))
         index = self.store.nearest_index(sid, at)
         row = track.iloc[index]
         valid_time = pd.Timestamp(row["valid_time"])
@@ -485,7 +501,7 @@ class InferenceEngine:
         sid = self.resolve(storm_id)
         g = self._tracks[sid]
         if upto is not None:
-            g = g[g["valid_time"] <= pd.Timestamp(upto)]
+            g = g[g["valid_time"] <= utc_naive(upto)]
 
         points = []
         for i, row in g.reset_index(drop=True).iterrows():
@@ -555,7 +571,8 @@ class InferenceEngine:
         for sid, g in self._tracks.items():
             idx = self.store.nearest_index(sid, at)
             row = g.iloc[idx]
-            if abs((pd.Timestamp(row["valid_time"]) - pd.Timestamp(at)).total_seconds()) > 6 * 3600:
+            delta = pd.Timestamp(row["valid_time"]) - utc_naive(at)
+            if abs(delta.total_seconds()) > 6 * 3600:
                 continue
             d = float(haversine_km(lat, lon, float(row["lat"]), float(row["lon"])))
             if best is None or d < best["distance_km"]:

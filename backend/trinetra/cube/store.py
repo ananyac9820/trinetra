@@ -185,7 +185,14 @@ class GranuleStore:
         not happened yet at the time on the scrubber.
         """
         t = self.times(sid)
-        idx = int(np.searchsorted(t.to_numpy(), np.datetime64(pd.Timestamp(at)), side="right") - 1)
+        # The cube's times are tz-naive UTC. A caller that hands in a tz-aware
+        # timestamp is converted rather than passed to numpy, which drops the
+        # zone with a warning and would silently do the wrong thing for any
+        # offset that is not UTC.
+        ts = pd.Timestamp(at)
+        if ts.tzinfo is not None:
+            ts = ts.tz_convert("UTC").tz_localize(None)
+        idx = int(np.searchsorted(t.to_numpy(), np.datetime64(ts), side="right") - 1)
         return max(0, min(idx, len(t) - 1))
 
     # ------------------------------------------------------------ granules

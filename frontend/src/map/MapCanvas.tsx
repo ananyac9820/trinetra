@@ -176,11 +176,19 @@ export default function MapCanvas({ track, state, risk, onProbe }: Props) {
     const m = map.current;
     if (!m || !ready || !s.stormId || !s.at) return;
 
+    // A removed map keeps responding to method calls but has no style, so
+    // `getStyle()` returns undefined and every read off it throws. That
+    // happens for real: an effect scheduled before a remount runs after the
+    // cleanup has torn the map down. Bail rather than throw, because throwing
+    // here takes the whole Explorer down with it.
+    const style = m.getStyle();
+    if (!style) return;
+
     const wanted = ordered.filter((l) => l.render === "raster");
     const wantedIds = new Set(wanted.map((l) => `tri-${l.id}`));
 
     // Remove what is no longer wanted.
-    for (const layer of m.getStyle().layers ?? []) {
+    for (const layer of style.layers ?? []) {
       if (layer.id.startsWith("tri-") && !wantedIds.has(layer.id)) {
         if (m.getLayer(layer.id)) m.removeLayer(layer.id);
         if (m.getSource(layer.id)) m.removeSource(layer.id);

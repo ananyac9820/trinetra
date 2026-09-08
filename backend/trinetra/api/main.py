@@ -51,6 +51,28 @@ async def lifespan(app: FastAPI):
     yield
 
 
+class SanitisedJSONResponse(JSONResponse):
+    """The application's default JSON encoder.
+
+    JSON has no representation for NaN or infinity, and the data this API
+    serves is full of legitimately undefined values: a best-track row with no
+    IMD category, a metric whose denominator is zero, a channel with no
+    observation. Every one of those has to travel as null, and `jsonable`
+    already encodes that rule for the evaluation reports.
+
+    Applying it here rather than at each return statement is what makes it a
+    property of the API instead of something a new endpoint can forget. It is
+    not a cosmetic choice: an unclassified best-track category was enough to
+    turn the whole `/state` response for a featured storm into a 500.
+
+    The large basemap payloads render their own `Response` and so never pass
+    through this walk.
+    """
+
+    def render(self, content) -> bytes:
+        return super().render(jsonable(content))
+
+
 app = FastAPI(
     title="TRINETRA",
     version=C.MODEL_VERSION,
@@ -60,6 +82,7 @@ app = FastAPI(
         "warning authority."
     ),
     lifespan=lifespan,
+    default_response_class=SanitisedJSONResponse,
 )
 app.include_router(basemap.router)
 app.add_middleware(
@@ -103,6 +126,24 @@ def get_mode():
     }
 
 
+def _parse_at(at: str | None, fallback: pd.Timestamp) -> pd.Timestamp:
+    """Parse the `at` query parameter into the tz-naive UTC the cube speaks.
+
+    Every timestamp inside TRINETRA is tz-naive and understood to be UTC: the
+    cube index, the best-track table and `Engine.now()` all are. The client
+    sends ISO strings with a Z suffix, which pandas correctly reads as
+    tz-aware, and the two cannot be compared or subtracted. Normalising once
+    at the boundary is what keeps that from surfacing as a 500 somewhere deep
+    in the engine, which is exactly how it surfaced: the probe's
+    nearest-system lookup subtracted a naive best-track time from an aware
+    request time and raised.
+    """
+    ts = pd.Timestamp(at) if at else pd.Timestamp(fallback)
+    if ts.tzinfo is not None:
+        ts = ts.tz_convert("UTC").tz_localize(None)
+    return ts
+
+
 @app.get("/api/capabilities")
 def get_capabilities():
     """What is actually installed and running, so nothing is claimed on faith."""
@@ -142,7 +183,7 @@ def get_freshness(storm_id: str | None = None, at: str | None = None):
         return {"channels": [], "mode": e.mode, "note": "no storms in the archive"}
 
     sid = e.resolve(storm_id)
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(e._tracks[sid]["valid_time"].max())
+    at_ts = _parse_at(at, e._tracks[sid]["valid_time"].max())
     index = e.store.nearest_index(sid, at_ts)
     tier = "live" if e.mode == "live" else "archive"
     granule = e.store.granule(sid, index, tier=tier)
@@ -247,7 +288,7 @@ def get_evidence(storm_id: str, at: str | None = None):
 
     sid = e.resolve(storm_id)
     track = e._tracks[sid]
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(track["valid_time"].max())
+    at_ts = _parse_at(at, track["valid_time"].max())
     index = e.store.nearest_index(sid, at_ts)
 
     batch = _build_batch(e, sid, index)
@@ -303,7 +344,7 @@ def get_saliency(storm_id: str, at: str | None = None, head: str = "vmax"):
     from ..model.explain import saliency_map
 
     sid = e.resolve(storm_id)
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(e._tracks[sid]["valid_time"].max())
+    at_ts = _parse_at(at, e._tracks[sid]["valid_time"].max())
     index = e.store.nearest_index(sid, at_ts)
     batch = _build_batch(e, sid, index)
     sal = saliency_map(STATE.model, batch, head=head)
@@ -376,7 +417,7 @@ def get_analogues(storm_id: str, at: str | None = None, k: int = 5):
             "analogues": [],
         }
     sid = e.resolve(storm_id)
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(e._tracks[sid]["valid_time"].max())
+    at_ts = _parse_at(at, e._tracks[sid]["valid_time"].max())
     index = e.store.nearest_index(sid, at_ts)
     batch = _build_batch(e, sid, index)
     if batch is None:
@@ -423,7 +464,7 @@ def get_tile(layer: str, z: int, x: int, y: int,
         return Response(status_code=204, headers={"X-Status": "no-data",
                                                   "X-Reason": "empty archive"})
     sid = e.resolve(storm_id)
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(e._tracks[sid]["valid_time"].max())
+    at_ts = _parse_at(at, e._tracks[sid]["valid_time"].max())
     index = e.store.nearest_index(sid, at_ts)
     tier = "live" if e.mode == "live" else "archive"
     granule = e.store.granule(sid, index, tier=tier)
@@ -479,7 +520,7 @@ def get_vector(layer: str, storm_id: str | None = None, at: str | None = None):
         storm_id = next((s["storm_id"] for s in storms if s["featured_slug"]),
                         storms[0]["storm_id"] if storms else None)
     sid = e.resolve(storm_id)
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(e._tracks[sid]["valid_time"].max())
+    at_ts = _parse_at(at, e._tracks[sid]["valid_time"].max())
 
     if layer in ("tri_track_intensity", "tri_regime_segments", "tri_regime_confidence"):
         track = e.track(sid, upto=at_ts)
@@ -614,7 +655,7 @@ def get_probe(lat: float, lon: float, at: str | None = None,
         storm_id = next((s["storm_id"] for s in storms if s["featured_slug"]),
                         storms[0]["storm_id"] if storms else None)
     sid = e.resolve(storm_id)
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(e._tracks[sid]["valid_time"].max())
+    at_ts = _parse_at(at, e._tracks[sid]["valid_time"].max())
     index = e.store.nearest_index(sid, at_ts)
     tier = "live" if e.mode == "live" else "archive"
     granule = e.store.granule(sid, index, tier=tier)
@@ -800,7 +841,7 @@ def get_district_risk(storm_id: str | None = None, at: str | None = None,
                         storms[0]["storm_id"] if storms else None)
     sid = e.resolve(storm_id)
     track_df = e._tracks[sid]
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(track_df["valid_time"].max())
+    at_ts = _parse_at(at, track_df["valid_time"].max())
     upto = e.store.nearest_index(sid, at_ts)
 
     d = districts()
@@ -902,7 +943,7 @@ def get_report(storm_id: str, fmt: str, at: str | None = None):
     """Operational outputs: ATCF, bulletin, GeoJSON, CAP XML."""
     e = engine()
     sid = e.resolve(storm_id)
-    at_ts = pd.Timestamp(at) if at else pd.Timestamp(e._tracks[sid]["valid_time"].max())
+    at_ts = _parse_at(at, e._tracks[sid]["valid_time"].max())
     st = e.state(sid, at=at_ts)
     track = e.track(sid, upto=at_ts)
 

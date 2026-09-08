@@ -19,6 +19,7 @@
 import { Suspense, lazy, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
+import ErrorBoundary from "./components/ErrorBoundary";
 import ModeBadge from "./components/ModeBadge";
 import { api } from "./api/client";
 import { useStore } from "./state/store";
@@ -165,6 +166,7 @@ export default function App() {
           ...(floating ? { position: "absolute", inset: 0 } : {}),
         }}
       >
+        <ErrorBoundary key={location.pathname} label="This page">
         <Suspense
           fallback={
             <div style={{ position: "absolute", inset: 0, display: "grid",
@@ -184,6 +186,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
       </main>
     </div>
   );
