@@ -203,8 +203,8 @@ export default function Upload() {
             />
             <button
               className="btn"
-              onClick={() => { setLat("19.2"); setLon("67.7"); }}
-              title="19.2 N, 67.7 E — the Biparjoy fix the sample file was cut from"
+              onClick={() => { setLat("11.8"); setLon("88.0"); }}
+              title="11.8 N, 88.0 E — the recorded position of the Mocha fix the sample file was cut from"
             >
               use sample position
             </button>
@@ -222,12 +222,21 @@ export default function Upload() {
             This works on radiometrically calibrated gridded data with metadata.
             It does not work on arbitrary images from the internet, and a
             screenshot will be rejected with an explanation of why.{" "}
-            <a href="/sample-biparjoy.npz" download>
+            <a href="/sample-mocha-intensifying.npz" download>
               Download a sample file
             </a>{" "}
-            (mode C, 56 KB): the five available channels and the fourteen
-            predictors from the archived Biparjoy fix at 2023-06-12 00:00 UTC,
-            whose recorded position is the sample position above.
+            (mode C, 75 KB): the six channels that fix actually had and the
+            fourteen predictors, cut from Mocha at 2023-05-11 09:00 UTC, whose
+            recorded position is the one the button above fills in. Best-track
+            has it at 45 kt there, and it gained 40 kt over the following 24
+            hours, so it is the case where the rapid-intensification head has
+            something to say.{" "}
+            <a href="/sample-biparjoy.npz" download>
+              A Biparjoy fix
+            </a>{" "}
+            is also available (2023-06-12 00:00 UTC, 19.2 N 67.7 E), with
+            microwave and scatterometer both absent, which is what widens the
+            centre-fix uncertainty and drops the confidence to reduced.
           </div>
         </div>
 
