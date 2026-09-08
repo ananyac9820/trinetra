@@ -17,6 +17,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import Page, { Section } from "../components/Page";
+import UploadResultMap from "../components/UploadResultMap";
 
 const INSTRUMENTS = [
   "insat-3d", "insat-3dr", "insat-3ds", "himawari-9", "goes-18",
@@ -56,12 +57,26 @@ export default function Upload() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [dragging, setDragging] = useState(false);
+  /* Kept as strings so the fields can be empty. Blank means "no position", and
+   * the result view then says so rather than guessing one. */
+  const [lat, setLat] = useState("");
+  const [lon, setLon] = useState("");
+
+  const parsedPos = (() => {
+    const a = Number(lat), o = Number(lon);
+    if (!lat.trim() || !lon.trim() || !Number.isFinite(a) || !Number.isFinite(o)) {
+      return null;
+    }
+    if (a < -90 || a > 90 || o < -180 || o > 180) return null;
+    return { lat: a, lon: o };
+  })();
+  const posInvalid = (lat.trim() !== "" || lon.trim() !== "") && parsedPos === null;
 
   const submit = async (file: File) => {
     setBusy(true);
     setResult(null);
     try {
-      setResult(await api.upload(file, instrument));
+      setResult(await api.upload(file, instrument, undefined, parsedPos ?? undefined));
     } catch (e) {
       setResult({ accepted: false, rejected_at: "transport", reason: String(e) });
     } finally {
@@ -75,6 +90,13 @@ export default function Upload() {
     const f = e.dataTransfer.files?.[0];
     if (f) submit(f);
   };
+
+  /* An accepted upload leaves the document layout entirely. The point of this
+   * screen is the map, and a judge should read it without scrolling. A refusal
+   * stays inside the page, where its reason has room to be read. */
+  if (result?.accepted) {
+    return <UploadResultMap result={result} onReset={() => setResult(null)} />;
+  }
 
   return (
     <Page
@@ -158,18 +180,64 @@ export default function Upload() {
               </select>
             </label>
           </div>
+
+          {/* Position. Optional, and labelled for exactly what it is: no
+            * upload payload carries a longitude, so a marker on the result map
+            * can only come from whoever supplied the file. */}
+          <div style={{ display: "flex", gap: 8, justifyContent: "center",
+                        alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
+            <span className="tele" style={{ color: "var(--fg-2)" }}>
+              observation position
+            </span>
+            <input
+              type="number" step="0.01" min={-90} max={90} value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              placeholder="lat °N" aria-label="latitude in degrees north"
+              style={{ width: 92 }}
+            />
+            <input
+              type="number" step="0.01" min={-180} max={180} value={lon}
+              onChange={(e) => setLon(e.target.value)}
+              placeholder="lon °E" aria-label="longitude in degrees east"
+              style={{ width: 92 }}
+            />
+            <button
+              className="btn"
+              onClick={() => { setLat("19.2"); setLon("67.7"); }}
+              title="19.2 N, 67.7 E — the Biparjoy fix the sample file was cut from"
+            >
+              use sample position
+            </button>
+          </div>
+          <div style={{ fontSize: 11, lineHeight: 1.6, marginTop: 6,
+                        color: posInvalid ? "var(--warn)" : "var(--fg-3)" }}>
+            {posInvalid
+              ? "Latitude must be between -90 and 90, longitude between -180 and 180. Leave both blank to skip the map marker."
+              : parsedPos
+                ? "Used to place the marker on the result map, labelled as declared. It is not an input to the model and no head consumes it."
+                : "Optional. TRINETRA cannot infer a position from an upload, so without one the result map has nothing to mark."}
+          </div>
           <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 12,
                         lineHeight: 1.6, maxWidth: 560, margin: "12px auto 0" }}>
             This works on radiometrically calibrated gridded data with metadata.
             It does not work on arbitrary images from the internet, and a
-            screenshot will be rejected with an explanation of why.
+            screenshot will be rejected with an explanation of why.{" "}
+            <a href="/sample-biparjoy.npz" download>
+              Download a sample file
+            </a>{" "}
+            (mode C, 56 KB): the five available channels and the fourteen
+            predictors from the archived Biparjoy fix at 2023-06-12 00:00 UTC,
+            whose recorded position is the sample position above.
           </div>
         </div>
 
-        {/* ------------------------------------------------ result */}
-        {result && (
+        {/* ------------------------------------------------ refusal
+          * An accepted result returned the map above, so the only thing that
+          * reaches this point is a refusal, which belongs in the document
+          * where its reason has room to be read. */}
+        {result && !result.accepted && (
           <div className="rise" style={{ marginTop: 20 }}>
-            {result.accepted ? <Accepted r={result} /> : <Rejected r={result} />}
+            <Rejected r={result} />
           </div>
         )}
 
@@ -257,139 +325,6 @@ function Rejected({ r }: { r: any }) {
   );
 }
 
-function Accepted({ r }: { r: any }) {
-  const dc = r.distribution_check ?? {};
-  const res = r.result ?? {};
-  const ood = typeof dc.score === "number";
-  return (
-    <div className="panel" style={{ padding: "16px 18px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10,
-                    flexWrap: "wrap" }}>
-        <span className="tele" style={{ color: "var(--ok)" }}>Input accepted</span>
-        <span className="tele">mode {r.mode}</span>
-        <span style={{ flex: 1 }} />
-        <span className="tele">{r.provenance_stamp?.filename}</span>
-      </div>
-
-      <Group title="Input" />
-      <Row k="Channels supplied"
-           v={(r.input?.channels_supplied ?? []).join(", ") || "none"} />
-      <Row k="Channels absent"
-           v={(r.input?.channels_absent ?? []).join(", ") || "none"} />
-      <Row k="Environmental data" v={r.input?.environmental_data ?? "--"} />
-      <Row k="Grid" v={r.input?.grid ?? "--"} />
-      <Row k="Instrument"
-           v={`${r.input?.instrument?.declared ?? "--"} — ${
-             r.input?.instrument?.note ?? ""}`} />
-
-      <Group title="Distribution check" />
-      {ood ? (
-        <>
-          <Row k="OOD score"
-               v={`${dc.score} against threshold ${dc.threshold}`}
-               colour={dc.in_distribution ? "var(--ok)" : "var(--alert)"} />
-          <Row k="Verdict" v={dc.verdict ?? "--"} />
-        </>
-      ) : (
-        <Row k="Status" v={dc.reason ?? dc.status ?? "unavailable"} />
-      )}
-
-      {Object.keys(res).length > 0 && (
-        <>
-          <Group title="Result" />
-          {res.detection && (
-            <Row k="Detection"
-                 v={`${res.detection.class} (conf ${res.detection.confidence})`} />
-          )}
-          {res.intensity && (
-            <Row k="Estimated intensity"
-                 v={`${res.intensity.vmax_kt} ± ${res.intensity.ci_kt} kt · sensor mode ${
-                   res.intensity.sensor_mode} · confidence ${res.intensity.confidence}`} />
-          )}
-          {res.centre_fix && (
-            <Row k="Centre fix"
-                 v={`± ${res.centre_fix.sigma_km} km${
-                   res.centre_fix.widened ? " (widened: IR only)" : ""}`} />
-          )}
-          {res.dvorak_scene && (
-            <Row k="Dvorak scene"
-                 v={`${res.dvorak_scene.scene} (conf ${res.dvorak_scene.confidence})${
-                   res.dvorak_scene.low_confidence ? " — low" : ""}`} />
-          )}
-          {res.regime && (
-            <Row k="Regime"
-                 v={`${res.regime.label} (conf ${res.regime.confidence})`} />
-          )}
-          {res.ri && (
-            <Row k="RI probability"
-                 v={res.ri.issued ? `${(res.ri.p24 * 100).toFixed(0)}%` : "NOT ISSUED"}
-                 colour={res.ri.issued ? undefined : "var(--warn)"} />
-          )}
-        </>
-      )}
-
-      {r.abstentions?.length > 0 && (
-        <>
-          <Group title={`Abstentions (${r.abstentions.length})`} />
-          {r.abstentions.map((a: any, i: number) => (
-            <div
-              key={i}
-              style={{
-                margin: "6px 0", padding: "9px 11px", borderRadius: "var(--r-sm)",
-                border: "1px solid color-mix(in srgb, var(--warn) 38%, transparent)",
-                background: "color-mix(in srgb, var(--warn) 7%, transparent)",
-              }}
-            >
-              <div className="tele" style={{ color: "var(--warn)" }}>{a.head}</div>
-              <div style={{ fontSize: 12, color: "var(--fg-1)", lineHeight: 1.6 }}>
-                {a.reason}
-              </div>
-            </div>
-          ))}
-          <div style={{ fontSize: 11.5, color: "var(--fg-3)", marginTop: 4,
-                        lineHeight: 1.6 }}>
-            Read the abstention again. The system is declining to answer and
-            explaining exactly what would enable the answer. That is the most
-            valuable thing on this screen.
-          </div>
-        </>
-      )}
-
-      {r.analogues?.length > 0 && (
-        <>
-          <Group title="Nearest analogues" />
-          <div className="scroll-x">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>Storm</th>
-                  <th className="num">Season</th>
-                  <th className="num">VMAX</th>
-                  <th className="num">Similarity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {r.analogues.map((a: any, i: number) => (
-                  <tr key={i}>
-                    <td>{a.name}</td>
-                    <td className="num">{a.season}</td>
-                    <td className="num">{a.vmax_kt?.toFixed?.(0) ?? "--"} kt</td>
-                    <td className="num">{a.similarity}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {r.provenance_stamp && <Checks stamp={r.provenance_stamp} />}
-
-      <div className="disclaimer" style={{ marginTop: 14 }}>{r.disclaimer}</div>
-    </div>
-  );
-}
-
 function Checks({ stamp }: { stamp: any }) {
   return (
     <details style={{ marginTop: 14 }}>
@@ -421,25 +356,5 @@ function Checks({ stamp }: { stamp: any }) {
         </a>
       </div>
     </details>
-  );
-}
-
-function Group({ title }: { title: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8,
-                  margin: "14px 0 6px" }}>
-      <span className="tele" style={{ color: "var(--fg-2)" }}>{title}</span>
-      <span className="hair" style={{ flex: 1 }} />
-    </div>
-  );
-}
-
-function Row({ k, v, colour }: { k: string; v: string; colour?: string }) {
-  return (
-    <div style={{ display: "flex", gap: 10, padding: "3px 0", fontSize: 12,
-                  borderBottom: "1px solid var(--line-soft)" }}>
-      <span className="tele" style={{ minWidth: 148 }}>{k}</span>
-      <span style={{ color: colour ?? "var(--fg-1)", lineHeight: 1.5 }}>{v}</span>
-    </div>
   );
 }

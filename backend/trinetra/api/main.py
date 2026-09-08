@@ -1183,7 +1183,9 @@ def get_methods():
 
 @app.post("/api/upload")
 async def post_upload(file: UploadFile, declared_instrument: str = Query("unknown"),
-                      channel_map: str | None = None):
+                      channel_map: str | None = None,
+                      lat: float | None = Query(None, ge=-90.0, le=90.0),
+                      lon: float | None = Query(None, ge=-180.0, le=180.0)):
     """Bring-your-own-data mode. The guardrail chain runs in order.
 
     Six checks, each failing loudly with a specific reason rather than quietly
@@ -1198,6 +1200,7 @@ async def post_upload(file: UploadFile, declared_instrument: str = Query("unknow
         declared_instrument=declared_instrument,
         channel_map=json.loads(channel_map) if channel_map else None,
         engine=engine(), model=STATE.model, checkpoint=STATE.checkpoint,
+        lat=lat, lon=lon,
     )
 
 

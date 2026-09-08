@@ -127,12 +127,23 @@ export const api = {
     return `${BASE}/api/storms/${encodeURIComponent(stormId)}/report/${fmt}?${q}`;
   },
 
-  async upload(file: File, declaredInstrument: string, channelMap?: Record<string, string>) {
+  /* pos is the position the uploader states the observation was taken at. It is
+   * metadata travelling beside the file, not an input to any head: the API
+   * echoes it back marked estimated_by_trinetra false. It exists because no
+   * upload payload carries a longitude, so without it there is nothing to put
+   * on a map. */
+  async upload(file: File, declaredInstrument: string,
+               channelMap?: Record<string, string>,
+               pos?: { lat: number; lon: number }) {
     const body = new FormData();
     body.append("file", file);
     const q = new URLSearchParams({ declared_instrument: declaredInstrument });
     if (channelMap && Object.keys(channelMap).length) {
       q.set("channel_map", JSON.stringify(channelMap));
+    }
+    if (pos && Number.isFinite(pos.lat) && Number.isFinite(pos.lon)) {
+      q.set("lat", String(pos.lat));
+      q.set("lon", String(pos.lon));
     }
     const res = await fetch(`${BASE}/api/upload?${q}`, { method: "POST", body });
     return await res.json();

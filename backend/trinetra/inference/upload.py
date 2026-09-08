@@ -80,10 +80,46 @@ class UploadRejected(Exception):
         super().__init__(reason)
 
 
+def _declared_position(lat: float | None, lon: float | None) -> dict:
+    """Echo the stated position, or say plainly that there isn't one.
+
+    in_basin is a bounding-box test for display, not a check: the geometry check
+    above runs on the file's own latitude and is unaffected by whatever is typed
+    into a form.
+    """
+    if lat is None or lon is None:
+        return {
+            "declared": False,
+            "note": "No position was supplied. Nothing in an upload payload "
+                    "carries a longitude, so TRINETRA cannot place this "
+                    "observation on a map by itself.",
+        }
+    w, s_, e, n = C.NIO_BBOX
+    return {
+        "declared": True,
+        "lat": round(float(lat), 4),
+        "lon": round(float(lon), 4),
+        "source": "declared by the uploader, alongside the file",
+        "estimated_by_trinetra": False,
+        "in_basin": bool(s_ <= lat <= n and w <= lon <= e),
+        "note": "Position as declared. TRINETRA did not estimate it and does "
+                "not verify it against the file.",
+    }
+
+
 def handle_upload(filename: str, payload: bytes, declared_instrument: str = "unknown",
                   channel_map: dict | None = None, engine=None, model=None,
-                  checkpoint: dict | None = None) -> dict:
-    """Run the chain and return the result, or the refusal and its reason."""
+                  checkpoint: dict | None = None,
+                  lat: float | None = None, lon: float | None = None) -> dict:
+    """Run the chain and return the result, or the refusal and its reason.
+
+    lat and lon are the position the uploader states the observation was
+    taken at. They are carried through untouched and never reach the model:
+    no head consumes them, no check is relaxed by them, and the response
+    marks them estimated_by_trinetra false. The upload path has no way to
+    infer a position, so a marker on a map has to come from the person who
+    supplied the file, and has to be labelled as theirs.
+    """
     checkpoint = checkpoint or {}
     stamp = {
         "filename": filename,
@@ -111,6 +147,7 @@ def handle_upload(filename: str, payload: bytes, declared_instrument: str = "unk
         return {
             "accepted": True,
             "mode": mode,
+            "position": _declared_position(lat, lon),
             "input": {
                 "channels_supplied": channels["supplied"],
                 "channels_absent": channels["absent"],
