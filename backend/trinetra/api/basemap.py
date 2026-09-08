@@ -63,7 +63,16 @@ def _douglas_peucker(pts: np.ndarray, tol: float) -> np.ndarray:
             d = np.hypot(*(pts[lo + 1 : hi] - a).T)
         else:
             # Perpendicular distance from each interior point to the chord.
-            d = np.abs(np.cross(seg, pts[lo + 1 : hi] - a)) / length
+            #
+            # Written out rather than np.cross, which took 2-D vectors and
+            # returned the scalar z-component until NumPy deprecated that in
+            # 2.0 and made it raise in 2.5. A fresh install gets the newer
+            # NumPy, so the call that worked here raised
+            # "Both input arrays must be (arrays of) 3-dimensional vectors"
+            # and both basemap routes returned 500 with no coastline. This is
+            # the same quantity, and it does not depend on the version.
+            v = pts[lo + 1 : hi] - a
+            d = np.abs(seg[0] * v[:, 1] - seg[1] * v[:, 0]) / length
         if d.size == 0:
             continue
         k = int(np.argmax(d)) + lo + 1

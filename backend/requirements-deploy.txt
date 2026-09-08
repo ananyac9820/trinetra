@@ -1,0 +1,40 @@
+# Serving only, for a 512 MB free-tier instance.
+#
+# This is requirements.txt minus torch, timm, xgboost and properscoring, which
+# are training and evaluation dependencies. Nothing in the request path imports
+# them: every torch import in the serving code sits behind a `model is None`
+# early return (api/deps.py, api/main.py in the evidence and saliency routes,
+# inference/engine.py, inference/upload.py), so with no checkpoint on the
+# instance none of them is reachable. model/ood.py needs only numpy.
+#
+# The reason to care is memory, measured on this project rather than guessed:
+# numpy, pandas, scipy and scikit-learn together cost about 150 MB resident,
+# FastAPI and uvicorn take it to 170, and importing torch adds 158 MB on top.
+# The full local process, with the cube and the checkpoint loaded, sits at
+# 451 MB. That does not leave room for tile rendering inside 512 MB.
+#
+# What this costs: VMAX, RI, Dvorak scene and regime report themselves as not
+# issued. The hazard classification, the tracks, the timeline, "what changed",
+# the district choropleth and the location probe all still answer, because they
+# come from the best-track and the rule set rather than from the network.
+#
+# Deploying with the model instead means committing data/models/trinetra.pt
+# (2.3 MB) and installing torch from its CPU index, or the build pulls the CUDA
+# wheel and several GB of nvidia-* packages:
+#
+#   pip install --extra-index-url https://download.pytorch.org/whl/cpu \
+#       -r requirements.txt
+#
+# That needs an instance with more than 512 MB to be reliable.
+
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+scikit-learn>=1.4
+Pillow>=10.2
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+python-multipart>=0.0.9
+httpx>=0.27
+websockets>=12.0
