@@ -45,3 +45,29 @@ frontend/tsconfig.tsbuildinfo
 
 # Simplified basemap geometry, regenerated on first request
 data/interim/districts_simplified_*.geojson
+
+# Generated model and cube artefacts.
+#
+# These slipped past the earlier rules and were committed: the cube index is
+# 1.5 MB of generated JSON, the embeddings are a training output, and a *.pt.bak
+# is not covered by the *.pt rule. All three are rebuilt by scripts/build_cube.py
+# and scripts/train.py.
+#
+# train_report.json is deliberately NOT ignored: it is 20 KB, it is a result
+# rather than a dataset, and it is what the methods page reads, so keeping it
+# is what makes the reported numbers checkable from a clean clone.
+data/cube/index_*.json
+data/cube/*_archive_*.npy
+data/models/*.npz
+data/models/*.pt
+data/models/*.pt.bak
+data/models/*.onnx
+
+# Caches rebuilt on first use.
+#
+# The land mask rasterises from Natural Earth in under a second, and the
+# parquet label table is a byte-for-byte duplicate of the CSV the loader
+# actually reads. The CSVs themselves stay tracked on purpose: they are what
+# lets a clean clone boot the API without first pulling 27 MB of IBTrACS.
+data/interim/land_mask_nio.npz
+data/labels/*.parquet
