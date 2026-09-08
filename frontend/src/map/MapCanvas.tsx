@@ -44,7 +44,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { api, REGIME_COLOR, RISK_COLOR } from "../api/client";
+import { api, REGIME_COLOR, RISK_COLOR, mapTransformRequest } from "../api/client";
 import type { DistrictRisk, StormState, StormSummary, Track } from "../api/types";
 import { useStore } from "../state/store";
 
@@ -170,6 +170,10 @@ export default function MapCanvas({ track, state, risk, onProbe, onHover,
     const m = new maplibregl.Map({
       container: holder.current,
       style: "/api/basemap/style.json",
+      // Sends the style document and the sources named inside it to the
+      // API rather than to this page's origin. Without it a split
+      // deployment loads no basemap at all.
+      transformRequest: mapTransformRequest,
       center: [s.lon, s.lat],
       zoom: s.zoom,
       bearing: s.bearing,

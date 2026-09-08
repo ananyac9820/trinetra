@@ -22,6 +22,36 @@ import type {
 
 const BASE = import.meta.env.VITE_API_BASE ?? "";
 
+/** Where the API lives. Empty when it is same-origin, as in dev behind the
+ *  Vite proxy and in a single-origin deployment. */
+export const API_BASE = BASE;
+
+/** Point a MapLibre map at the API instead of at the page's own origin.
+ *
+ * Every request a map makes goes through this: the style document, and then
+ * the source URLs written inside it. Both are relative paths, and MapLibre
+ * resolves a relative URL against the page rather than against the style, so
+ * on a split deployment they land on the static host. That host serves a
+ * single-page app, so it answers with index.html rather than a 404, and the
+ * failure surfaces as "Unexpected token '<'" from a JSON parse with no
+ * indication of which request produced it.
+ *
+ * Only same-origin /api paths are rewritten, so tile URLs that already carry
+ * the base, and anything external, are left alone.
+ */
+export function mapTransformRequest(url: string) {
+  if (!BASE) return { url };
+  try {
+    const u = new URL(url, window.location.href);
+    if (u.origin === window.location.origin && u.pathname.startsWith("/api/")) {
+      return { url: `${BASE}${u.pathname}${u.search}` };
+    }
+  } catch {
+    /* not a URL we can reason about; hand it back untouched */
+  }
+  return { url };
+}
+
 class ApiError extends Error {
   constructor(public status: number, public path: string, message: string) {
     super(`${status} on ${path}: ${message}`);

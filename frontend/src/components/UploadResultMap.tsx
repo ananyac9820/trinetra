@@ -31,7 +31,7 @@ import maplibregl from "maplibre-gl";
 // .maplibregl-marker loses its absolute positioning and the cyclone marker
 // lands in normal flow below the canvas instead of on the storm.
 import "maplibre-gl/dist/maplibre-gl.css";
-import { api } from "../api/client";
+import { api, mapTransformRequest } from "../api/client";
 import { useStore } from "../state/store";
 import type { ImdBand } from "../api/types";
 
@@ -242,6 +242,11 @@ export default function UploadResultMap({ result, onReset }: Props) {
           },
         ],
       },
+      // The basemap sources below are relative paths, which resolve against
+      // this page rather than the API. On a split deployment that is the
+      // static host, which rewrites unknown paths to index.html and hands
+      // MapLibre HTML where it wanted GeoJSON.
+      transformRequest: mapTransformRequest,
       center: hasPos ? [pos.lon, pos.lat] : [72, 17],
       zoom: hasPos ? 5.1 : 4.2,
       attributionControl: false,
